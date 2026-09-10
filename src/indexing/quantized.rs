@@ -2,8 +2,8 @@ use ruda_core::tensor::{
     DType, QTensorPrimitive, QuantLevel, QuantScheme, QuantStore, Shape, Slice, SliceOps,
     TensorMetadata,
 };
-use ruda_kernel::dsl as cubecl;
-use ruda_kernel::dsl::{Runtime, calculate_cube_count_elemwise, prelude::*};
+use ruda_kernel::dsl as kernel_dsl;
+use ruda_kernel::dsl::{Runtime, calculate_ruda_count_elemwise, prelude::*};
 use ruda_kernel::library::{FastDivmod, tensor::layout::linear::LinearView};
 use ruda_kernel::tensor::{
     RudaTensor, allocation::empty_qtensor_optimized, layout::{address_type, shape_divmod},
@@ -41,8 +41,8 @@ pub fn quantized_slice<R: Runtime>(tensor: RudaTensor<R>, slices: &[Slice]) -> R
     }
 
     let (axis, inner, axis_len) = packing_layout(&output);
-    let cube_dim = CubeDim::new(output.client.properties(), num_elems);
-    let cube_count = calculate_cube_count_elemwise(&output.client, num_elems, cube_dim);
+    let ruda_dim = RudaDim::new(output.client.properties(), num_elems);
+    let ruda_count = calculate_ruda_count_elemwise(&output.client, num_elems, ruda_dim);
     let dtype = raw_dtype(values.dtype);
     let step_address = AddressType::from_len(
         slices.iter().map(|slice| slice.step.unsigned_abs()).max().unwrap_or(1),
@@ -50,8 +50,8 @@ pub fn quantized_slice<R: Runtime>(tensor: RudaTensor<R>, slices: &[Slice]) -> R
     unsafe {
         affine_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(values, out_values).max(AddressType::from_len(
                 tensor.meta.num_elements().max(output.meta.num_elements()),
             )).max(step_address),
@@ -87,14 +87,14 @@ pub fn quantized_select<R: Runtime>(
     }
 
     let (axis, inner, axis_len) = packing_layout(&output);
-    let cube_dim = CubeDim::new(output.client.properties(), num_elems);
-    let cube_count = calculate_cube_count_elemwise(&output.client, num_elems, cube_dim);
+    let ruda_dim = RudaDim::new(output.client.properties(), num_elems);
+    let ruda_count = calculate_ruda_count_elemwise(&output.client, num_elems, ruda_dim);
     let dtypes = [raw_dtype(values.dtype).into(), indices.dtype.into()];
     unsafe {
         select_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(values, indices, out_values).max(AddressType::from_len(
                 tensor.meta.num_elements().max(output.meta.num_elements()),
             )),
@@ -146,7 +146,7 @@ fn packing_layout<R: Runtime>(tensor: &RudaTensor<R>) -> (usize, usize, usize) {
     (axis, inner, axis_len)
 }
 
-#[cube]
+#[ruda]
 fn read_value<T: Int>(
     input: &Tensor<T>,
     offset: usize,
@@ -158,7 +158,7 @@ fn read_value<T: Int>(
     (input[offset] >> T::cast_from(slot * bits)) & mask
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn affine_kernel<T: Int>(
     input: &Tensor<T>,
     output: &mut LinearView<T, ReadWrite>,
@@ -213,7 +213,7 @@ fn affine_kernel<T: Int>(
     output[ABSOLUTE_POS] = packed;
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn select_kernel<T: Int, I: Numeric>(
     input: &Tensor<T>,
     indices: &LinearView<I>,

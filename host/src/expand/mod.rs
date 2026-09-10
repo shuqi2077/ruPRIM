@@ -135,7 +135,7 @@ pub fn expand(tensor: HostTensor, target_shape: Shape) -> HostTensor {
 // flipped inputs, preserved start-offset on narrowed inputs) and the
 // flex-only `broadcast_binary` helper. Public-API expand coverage for
 // transpose/flip/narrow variants lives in
-// crates/burn-backend-tests/tests/tensor/{float,int,bool}/ops/expand.rs
+// crates/ruda-backend-tests/tests/tensor/{float,int,bool}/ops/expand.rs
 // so it runs on every backend.
 #[cfg(test)]
 mod tests;

@@ -1,11 +1,11 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::max_vector_size;
 use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::TensorMetadata;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
@@ -14,14 +14,14 @@ pub trait FloatUnaryOpFamily: 'static + Send + Sync {
     type Unary<F: Float, N: Size>: FloatUnaryOp<F, N, Options = Self::Options>;
 }
 
-#[cube]
+#[ruda]
 pub trait FloatUnaryOp<F: Float, N: Size>: 'static + Send + Sync {
     type Options: LaunchArg;
 
     fn execute(input: Vector<F, N>, options: &Self::Options) -> Vector<F, N>;
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn unary_float<F: Float, N: Size, O: FloatUnaryOpFamily>(
     input: &LinearView<Vector<F, N>>,
     output: &mut LinearView<Vector<F, N>, ReadWrite>,
@@ -49,16 +49,16 @@ where
     let num_elems = tensor.meta.num_elements();
 
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
     let dtype = tensor.dtype;
 
     unsafe {
         if tensor.can_mut() && tensor.is_nonoverlapping() {
             unary_float::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor),
                 vector_size,
                 tensor.clone().into_linear_view(),
@@ -78,8 +78,8 @@ where
 
             unary_float::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor, output),
                 vector_size,
                 tensor.into_linear_view(),
@@ -140,14 +140,14 @@ pub mod unary_basic {
         InverseSqrt,
     }
 
-    #[derive(CubeLaunch, CubeType)]
+    #[derive(RudaLaunch, RudaType)]
     struct BasicFloatUnaryOptions {
-        #[cube(comptime)]
+        #[ruda(comptime)]
         kind: BasicFloatUnaryKind,
     }
     struct BasicFloatUnary;
 
-    #[cube]
+    #[ruda]
     impl<F: Float, N: Size> FloatUnaryOp<F, N> for BasicFloatUnary {
         type Options = BasicFloatUnaryOptions;
 

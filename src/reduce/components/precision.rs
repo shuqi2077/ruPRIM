@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::define_size;
 use ruda_kernel::dsl::flex32;
 use ruda_kernel::dsl::prelude::Numeric;

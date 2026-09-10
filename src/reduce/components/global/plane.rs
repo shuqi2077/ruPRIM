@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     ReduceInstruction, ReducePrecision, VectorizationMode,
     components::{
@@ -15,10 +15,10 @@ use crate::reduce::components::instructions::ReduceStep;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct GlobalFullPlaneReduce;
 
-#[cube]
+#[ruda]
 impl GlobalFullPlaneReduce {
     pub fn execute<P: ReducePrecision, Out: NumericVector, I: ReduceInstruction<P>>(
         input: &VirtualTensor<P::EI, P::SI>,
@@ -30,11 +30,11 @@ impl GlobalFullPlaneReduce {
         #[comptime] blueprint: PlaneReduceBlueprint,
     ) {
         let acc_format = I::accumulator_format(inst);
-        let planes_per_cube = CUBE_DIM_Y as usize * CUBE_DIM_Z as usize;
+        let planes_per_ruda = RUDA_DIM_Y as usize * RUDA_DIM_Z as usize;
         let plane_index = PLANE_POS as usize;
-        let assigned = plane_index < planes_per_cube;
+        let assigned = plane_index < planes_per_ruda;
         let leader = plane_exclusive_sum(1u32) == 0;
-        let reduction_index = CUBE_POS * planes_per_cube + plane_index;
+        let reduction_index = RUDA_POS * planes_per_ruda + plane_index;
         let write_index = reduction_index;
 
         let mut writer = Writer::<Out>::new::<P>(

@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensorOperations;
@@ -32,14 +32,14 @@ impl<T: Numeric, N: Size> NumericVector for (T, N) {
     type N = N;
 }
 
-#[cube]
+#[ruda]
 #[allow(dead_code)]
 pub trait ReduceArgs: Send + Sync + 'static + Clone {
-    type Input<E: Numeric, S: Size>: LaunchArg + CubeType;
+    type Input<E: Numeric, S: Size>: LaunchArg + RudaType;
 
-    type Output<E: Numeric, S: Size>: LaunchArg + CubeType;
+    type Output<E: Numeric, S: Size>: LaunchArg + RudaType;
 
-    type State<P: ReduceDType>: CubeType;
+    type State<P: ReduceDType>: RudaType;
 
     fn init_state<P: ReduceDType>(
         input: &Self::Input<P::In, P::SizeIn>,
@@ -78,7 +78,7 @@ pub trait ReduceArgs: Send + Sync + 'static + Clone {
     fn vector_size_output<P: ReduceDType>(state: &Self::State<P>) -> comptime_type!(VectorSize);
 }
 
-#[cube]
+#[ruda]
 pub fn init_tensors<RA: ReduceArgs, In: Numeric, InSize: Size, Out: Numeric, OutSize: Size>(
     input: &RA::Input<In, InSize>,
     output: &mut RA::Output<Out, OutSize>,
@@ -104,7 +104,7 @@ pub fn init_tensors<RA: ReduceArgs, In: Numeric, InSize: Size, Out: Numeric, Out
 #[derive(Clone)]
 pub struct TensorArgs;
 
-#[cube]
+#[ruda]
 impl ReduceArgs for TensorArgs {
     type Input<EG: Numeric, N: Size> = Tensor<Vector<EG, N>>;
     type Output<EG: Numeric, N: Size> = Tensor<Vector<EG, N>>;
@@ -199,7 +199,7 @@ pub struct TensorArg<P: ReduceDType, RA: ReduceArgs, Tag> {
 }
 
 pub struct TensorArgExpand<P: ReduceDType, RA: ReduceArgs, Tag> {
-    state: <RA::State<P> as CubeType>::ExpandType,
+    state: <RA::State<P> as RudaType>::ExpandType,
     tag: PhantomData<Tag>,
 }
 
@@ -209,7 +209,7 @@ impl<P: ReduceDType, RA: ReduceArgs> TensorArg<P, RA, Input> {
     }
     pub fn __expand_new_input(
         _scope: &mut Scope,
-        state: <RA::State<P> as CubeType>::ExpandType,
+        state: <RA::State<P> as RudaType>::ExpandType,
     ) -> TensorArgExpand<P, RA, Input> {
         TensorArgExpand {
             state,
@@ -224,7 +224,7 @@ impl<P: ReduceDType, RA: ReduceArgs> TensorArg<P, RA, Output> {
     }
     pub fn __expand_new_output(
         _scope: &mut Scope,
-        state: <RA::State<P> as CubeType>::ExpandType,
+        state: <RA::State<P> as RudaType>::ExpandType,
     ) -> TensorArgExpand<P, RA, Output> {
         TensorArgExpand {
             state,
@@ -388,7 +388,7 @@ impl<P: ReduceDType, RA: ReduceArgs> VectorizedExpand for TensorArgExpand<P, RA,
 mod __tensor_arg {
     use super::*;
 
-    impl<P: ReduceDType, RA: ReduceArgs, Tag> CubeType for TensorArg<P, RA, Tag> {
+    impl<P: ReduceDType, RA: ReduceArgs, Tag> RudaType for TensorArg<P, RA, Tag> {
         type ExpandType = TensorArgExpand<P, RA, Tag>;
     }
 
@@ -398,7 +398,7 @@ mod __tensor_arg {
         }
     }
 
-    impl<P: ReduceDType, RA: ReduceArgs, Tag> CubeDebug for TensorArgExpand<P, RA, Tag> {}
+    impl<P: ReduceDType, RA: ReduceArgs, Tag> RudaDebug for TensorArgExpand<P, RA, Tag> {}
     impl<P: ReduceDType, RA: ReduceArgs, Tag> Clone for TensorArgExpand<P, RA, Tag> {
         fn clone(&self) -> Self {
             Self {

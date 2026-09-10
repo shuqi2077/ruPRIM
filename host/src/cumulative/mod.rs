@@ -258,7 +258,7 @@ pub fn cummax_half<E: Element + Pod + Default + Copy>(
 
 // Cumsum / cumprod / cummin / cummax coverage (basic, stride variants,
 // NaN propagation, int dtype) lives in
-// crates/burn-backend-tests/tests/tensor/{float,int}/ops/cumulative.rs so
+// crates/ruda-backend-tests/tests/tensor/{float,int}/ops/cumulative.rs so
 // every backend is exercised. When adding new tests, keep them here only
 // if they probe flex-specific kernel internals; otherwise add them
 // there.

@@ -1,14 +1,14 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn repeat_dim_kernel<E: Numeric>(
     input: &Tensor<E>,
     output: &mut Tensor<E>,
@@ -72,16 +72,16 @@ pub fn repeat_dim<R: Runtime>(
         return output;
     }
 
-    let cube_dim = CubeDim::new(input.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&input.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(input.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&input.client, working_units, ruda_dim);
 
     let shape_arg = input.meta.shape()[dim];
 
     unsafe {
         repeat_dim_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(input, output),
             input.into_tensor_arg(),
             output.clone().into_tensor_arg(),

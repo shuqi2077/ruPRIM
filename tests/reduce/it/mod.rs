@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 pub mod test_case;
 
 macro_rules! testgen_reduce {
@@ -106,12 +106,12 @@ macro_rules! testgen_reduce {
         use ruprim::reduce::{ReduceStrategy, routines::BlueprintStrategy, launch::RoutineStrategy};
         use ruprim::reduce::routines::PlaneMergeStrategy;
 
-        /// Cube-routine tests are expensive on CPU and can stall CI, so they
+        /// Ruda-routine tests are expensive on CPU and can stall CI, so they
         /// are excluded from light test suite
         #[cfg(feature = "heavy")]
-        mod full_cube {
+        mod full_ruda {
             use super::*;
-            use ruprim::reduce::routines::cube::CubeStrategy;
+            use ruprim::reduce::routines::ruda::RudaStrategy;
 
             testgen_reduce!(
                 dtype: $dtype,
@@ -120,17 +120,17 @@ macro_rules! testgen_reduce {
                 axis: $axis,
                 strategy: ReduceStrategy {
                     vectorization: $vectorization_strategy,
-                    routine: RoutineStrategy::Cube(
-                        BlueprintStrategy::Inferred(CubeStrategy{ use_planes: false })
+                    routine: RoutineStrategy::Ruda(
+                        BlueprintStrategy::Inferred(RudaStrategy{ use_planes: false })
                     ),
                 },
             );
         }
 
         #[cfg(feature = "heavy")]
-        mod full_cube_plane {
+        mod full_ruda_plane {
             use super::*;
-            use ruprim::reduce::routines::cube::CubeStrategy;
+            use ruprim::reduce::routines::ruda::RudaStrategy;
 
             testgen_reduce!(
                 dtype: $dtype,
@@ -139,23 +139,23 @@ macro_rules! testgen_reduce {
                 axis: $axis,
                 strategy: ReduceStrategy {
                     vectorization: $vectorization_strategy,
-                    routine: RoutineStrategy::Cube(
-                        BlueprintStrategy::Inferred(CubeStrategy{ use_planes: true })
+                    routine: RoutineStrategy::Ruda(
+                        BlueprintStrategy::Inferred(RudaStrategy{ use_planes: true })
                     ),
                 },
             );
         }
 
-        /// The goal of that test is to limit the size of a cube to `8` to validate multiple cubes
+        /// The goal of that test is to limit the size of a ruda to `8` to validate multiple rudas
         /// arithmetic.
         ///
-        /// With this test, we can't have `use_planes` to true since the `cube_dim.x !=
+        /// With this test, we can't have `use_planes` to true since the `ruda_dim.x !=
         /// plane_size`.
         #[cfg(feature = "heavy")]
-        mod full_cube_single_plane {
+        mod full_ruda_single_plane {
             use super::*;
-            use ruprim::reduce::{routines::CubeBlueprint, {BoundChecks, IdleMode}};
-            use ruda_kernel::dsl::prelude::CubeDim;
+            use ruprim::reduce::{routines::RudaBlueprint, {BoundChecks, IdleMode}};
+            use ruda_kernel::dsl::prelude::RudaDim;
 
             testgen_reduce!(
                 dtype: $dtype,
@@ -164,27 +164,27 @@ macro_rules! testgen_reduce {
                 axis: $axis,
                 strategy: ReduceStrategy {
                     vectorization: $vectorization_strategy,
-                    routine: RoutineStrategy::Cube(
+                    routine: RoutineStrategy::Ruda(
                         BlueprintStrategy::Forced(
-                            CubeBlueprint {
-                                cube_idle: IdleMode::Terminate,
+                            RudaBlueprint {
+                                ruda_idle: IdleMode::Terminate,
                                 bound_checks: BoundChecks::Mask,
                                 num_shared_accumulators: 8,
                                 use_planes: false,
                             },
-                            CubeDim::new_2d(8, 1),
+                            RudaDim::new_2d(8, 1),
                         )
                     ),
                 },
             );
         }
 
-        /// The goal of that test is to limit the size of a cube to `plane_size` to validate multiple planes
+        /// The goal of that test is to limit the size of a ruda to `plane_size` to validate multiple planes
         /// arithmetic.
         mod full_plane_single_plane {
             use super::*;
             use ruprim::reduce::{routines::PlaneReduceBlueprint, {BoundChecks, IdleMode}};
-            use ruda_kernel::dsl::prelude::CubeDim;
+            use ruda_kernel::dsl::prelude::RudaDim;
 
             mod plane_size_32 {
                 use super::*;
@@ -204,7 +204,7 @@ macro_rules! testgen_reduce {
                                     plane_merge_strategy: PlaneMergeStrategy::Lazy,
                                     plane_dim_ceil: true,
                                 },
-                                CubeDim::new_2d(32, 2),
+                                RudaDim::new_2d(32, 2),
                             )
                         ),
                     },
@@ -229,7 +229,7 @@ macro_rules! testgen_reduce {
                                     plane_merge_strategy: PlaneMergeStrategy::Lazy,
                                     plane_dim_ceil: true,
                                 },
-                                CubeDim::new_2d(64, 2),
+                                RudaDim::new_2d(64, 2),
                             )
                         ),
                     },

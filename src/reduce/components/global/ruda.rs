@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     ReduceInstruction, ReducePrecision, VectorizationMode,
     components::{
@@ -7,19 +7,19 @@ use crate::reduce::{
         instructions::{
             Accumulator, ReduceStep, SharedAccumulator, fuse_accumulator_inplace, reduce_inplace,
         },
-        readers::{Reader, cube::CubeReader},
+        readers::{Reader, ruda::RudaReader},
         writers::Writer,
     },
-    routines::CubeBlueprint,
+    routines::RudaBlueprint,
 };
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[derive(CubeType)]
-pub struct GlobalFullCubeReduce;
+#[derive(RudaType)]
+pub struct GlobalFullRudaReduce;
 
-#[cube]
-impl GlobalFullCubeReduce {
+#[ruda]
+impl GlobalFullRudaReduce {
     pub fn execute<P: ReducePrecision, Out: NumericVector, I: ReduceInstruction<P>>(
         input: &VirtualTensor<P::EI, P::SI>,
         output: &mut VirtualTensor<Out::T, Out::N, ReadWrite>,
@@ -27,10 +27,10 @@ impl GlobalFullCubeReduce {
         out_vec_axis: usize,
         inst: &I,
         #[comptime] vectorization_mode: VectorizationMode,
-        #[comptime] blueprint: CubeBlueprint,
+        #[comptime] blueprint: RudaBlueprint,
     ) {
         let acc_format = I::accumulator_format(inst);
-        let write_index = CUBE_POS;
+        let write_index = RUDA_POS;
 
         let accumulator_size = blueprint.num_shared_accumulators;
         let worker_pos = Self::worker_pos(blueprint);
@@ -55,7 +55,7 @@ impl GlobalFullCubeReduce {
             reduce_axis,
             reduce_index_start,
             vectorization_mode,
-            blueprint.cube_idle,
+            blueprint.ruda_idle,
         );
 
         for b in 0..write_count {
@@ -87,7 +87,7 @@ impl GlobalFullCubeReduce {
                     }
 
                     // Wait for plane 0 to finish reading SM before next iter overwrites it.
-                    sync_cube();
+                    sync_ruda();
                 }
                 false => {
                     reduce_tree::<P, I>(
@@ -114,7 +114,7 @@ impl GlobalFullCubeReduce {
         }
     }
 
-    fn worker_pos(#[comptime] blueprint: CubeBlueprint) -> usize {
+    fn worker_pos(#[comptime] blueprint: RudaBlueprint) -> usize {
         match blueprint.use_planes {
             true => PLANE_POS as usize,
             false => UNIT_POS as usize,
@@ -130,7 +130,7 @@ impl GlobalFullCubeReduce {
         inst: &I,
         idle: ComptimeOption<bool>,
         #[comptime] vectorization_mode: VectorizationMode,
-        #[comptime] blueprint: CubeBlueprint,
+        #[comptime] blueprint: RudaBlueprint,
     ) -> I::SharedAccumulator {
         let reader = Reader::<P>::new::<I, Out>(
             input,
@@ -143,7 +143,7 @@ impl GlobalFullCubeReduce {
             vectorization_mode,
             false,
         );
-        let reader = CubeReader::<P>::new(reader);
+        let reader = RudaReader::<P>::new(reader);
         let mut accumulator = I::null_accumulator(inst);
 
         for i in 0..reader.length() {
@@ -161,7 +161,7 @@ impl GlobalFullCubeReduce {
             false => accumulator,
         };
 
-        // Sync at the cube level.
+        // Sync at the ruda level.
         let accumulator_size = blueprint.num_shared_accumulators;
         let requirements = I::requirements(inst);
         let mut accumulator_shared =
@@ -175,13 +175,13 @@ impl GlobalFullCubeReduce {
             I::SharedAccumulator::write(&mut accumulator_shared, worker_pos, accumulator_plane);
         }
 
-        sync_cube();
+        sync_ruda();
 
         accumulator_shared
     }
 }
 
-#[cube]
+#[ruda]
 fn reduce_scan<P: ReducePrecision, I: ReduceInstruction<P>>(
     inst: &I,
     shared_accumulator: &mut I::SharedAccumulator,
@@ -194,7 +194,7 @@ fn reduce_scan<P: ReducePrecision, I: ReduceInstruction<P>>(
     }
 }
 
-/// Use all units within a cube to fuse the first `size` elements of `accumulator` inplace like this with some padding if `size` is not a power of 2.
+/// Use all units within a ruda to fuse the first `size` elements of `accumulator` inplace like this with some padding if `size` is not a power of 2.
 ///
 ///
 /// ```ignored
@@ -213,12 +213,12 @@ fn reduce_scan<P: ReducePrecision, I: ReduceInstruction<P>>(
 ///
 /// The outcome is stored in the first element of the accumulator and also returned by this function for convenience.
 ///
-/// Since each individual cube performs a reduction, this function is meant to be called
-/// with a different `accumulator` for each cube based on `CUBE_POS`.
+/// Since each individual ruda performs a reduction, this function is meant to be called
+/// with a different `accumulator` for each ruda based on `RUDA_POS`.
 ///
 /// There is no out-of-bound check, so it is the responsibility of the caller to ensure that `size` is at most the length
-/// of the shared memory and that there are at least `size` units within each cube.
-#[cube]
+/// of the shared memory and that there are at least `size` units within each ruda.
+#[ruda]
 fn reduce_tree<P: ReducePrecision, I: ReduceInstruction<P>>(
     inst: &I,
     shared_accumulator: &mut I::SharedAccumulator,
@@ -237,7 +237,7 @@ fn reduce_tree<P: ReducePrecision, I: ReduceInstruction<P>>(
                 fuse_accumulator_inplace::<P, I>(inst, shared_accumulator, destination, origin);
             }
             jump *= 2;
-            sync_cube();
+            sync_ruda();
         }
     } else {
         let mut num_remaining_items = size.runtime();
@@ -250,10 +250,10 @@ fn reduce_tree<P: ReducePrecision, I: ReduceInstruction<P>>(
             }
             num_remaining_items = num_remaining_items.div_ceil(2);
             jump *= 2;
-            sync_cube();
+            sync_ruda();
         }
     }
-    sync_cube();
+    sync_ruda();
 
     let acc = I::SharedAccumulator::read(shared_accumulator, 0);
     I::fuse_accumulators(inst, accumulator, &acc);

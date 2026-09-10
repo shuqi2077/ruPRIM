@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use super::{ReduceFamily, ReduceInstruction, ReduceRequirements, Sum};
 use crate::reduce::components::{
     instructions::{Accumulator, AccumulatorFormat, Item, ReduceStep, Value},
@@ -6,7 +6,7 @@ use crate::reduce::components::{
 };
 use ruda_kernel::dsl::prelude::*;
 
-#[derive(Debug, CubeType, Clone)]
+#[derive(Debug, RudaType, Clone)]
 pub struct Mean {
     pub(crate) sum: Sum,
 }
@@ -16,12 +16,12 @@ impl ReduceFamily for Mean {
     type Config = ();
 }
 
-#[cube]
+#[ruda]
 fn null_input<P: ReducePrecision, SI: ReduceInstruction<P>>(sum: &SI) -> Vector<P::EI, P::SI> {
     SI::null_input(sum)
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ReduceInstruction<P> for Mean {
     type SharedAccumulator = SharedMemory<Vector<P::EA, P::SI>>;
     type Config = ();

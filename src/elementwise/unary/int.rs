@@ -1,11 +1,11 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::max_vector_size;
 use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::TensorMetadata;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
@@ -14,14 +14,14 @@ pub trait IntUnaryOpFamily: 'static + Send + Sync {
     type Unary<I: Int, N: Size>: IntUnaryOp<I, N, Options = Self::Options>;
 }
 
-#[cube]
+#[ruda]
 pub trait IntUnaryOp<I: Scalar, N: Size>: 'static + Send + Sync {
     type Options: LaunchArg;
 
     fn execute(input: Vector<I, N>, options: &Self::Options) -> Vector<I, N>;
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn unary_int<I: Int, N: Size, O: IntUnaryOpFamily>(
     input: &LinearView<Vector<I, N>>,
     output: &mut LinearView<Vector<I, N>, ReadWrite>,
@@ -46,16 +46,16 @@ where
     let num_elems = tensor.meta.num_elements();
 
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
     let dtype = tensor.dtype;
 
     unsafe {
         if tensor.can_mut() && tensor.is_nonoverlapping() {
             unary_int::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor),
                 vector_size,
                 tensor.clone().into_linear_view(),
@@ -75,8 +75,8 @@ where
 
             unary_int::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor, output),
                 vector_size,
                 tensor.into_linear_view(),
@@ -113,14 +113,14 @@ pub mod unary_basic_int {
         Sign,
     }
 
-    #[derive(CubeLaunch, CubeType)]
+    #[derive(RudaLaunch, RudaType)]
     struct BasicIntUnaryOptions {
-        #[cube(comptime)]
+        #[ruda(comptime)]
         kind: BasicIntUnaryKind,
     }
     struct BasicIntUnary;
 
-    #[cube]
+    #[ruda]
     impl<I: Int, N: Size> IntUnaryOp<I, N> for BasicIntUnary {
         type Options = BasicIntUnaryOptions;
 

@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
@@ -8,7 +8,7 @@ use ruda_core::tensor::Slice;
 use ruda_core::tensor::TensorMetadata;
 use ruda_core::tensor::Metadata;
 use ruda_core::tensor::SliceOps;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::intrinsic;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
@@ -62,7 +62,7 @@ pub fn slice<R: Runtime>(tensor: RudaTensor<R>, indices: &[Range<usize>]) -> Rud
     }
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn slice_kernel<E: Numeric>(
     input: &Tensor<E>,
     output: &mut LinearView<E, ReadWrite>,
@@ -112,15 +112,15 @@ pub fn slice_on_output<R: Runtime>(
     }
 
     let working_units = output.meta.num_elements();
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
     let dtype = tensor.dtype;
 
     unsafe {
         slice_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, output),
             tensor.into_tensor_arg(),
             output.clone().into_linear_view(),
@@ -134,7 +134,7 @@ pub fn slice_on_output<R: Runtime>(
 }
 
 /// Kernel for slicing with steps
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn slice_with_steps_kernel<E: Numeric>(
     input: &Tensor<E>,
     output: &mut LinearView<E, ReadWrite>,
@@ -233,8 +233,8 @@ pub fn slice_with_steps<R: Runtime>(tensor: RudaTensor<R>, slices: &[Slice]) -> 
 
     // Launch kernel
     let working_units = shape_output.num_elements();
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
     let dtype = tensor.dtype;
 
     let step_address = AddressType::from_len(
@@ -243,8 +243,8 @@ pub fn slice_with_steps<R: Runtime>(tensor: RudaTensor<R>, slices: &[Slice]) -> 
     unsafe {
         slice_with_steps_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, output).max(step_address),
             tensor.into_tensor_arg(),
             output.clone().into_linear_view(),
@@ -262,7 +262,7 @@ pub fn slice_with_steps<R: Runtime>(tensor: RudaTensor<R>, slices: &[Slice]) -> 
 
 /// This is annoying and we need to find a way to do this automatically at some point
 #[allow(unused)]
-#[cube]
+#[ruda]
 fn unwrap(value: u32) -> comptime_type!(u32) {
     intrinsic!(|_| value.constant().unwrap().as_u32())
 }

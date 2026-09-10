@@ -1,9 +1,9 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::{Coords1d, Coords2d, Layout, LayoutExpand};
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[cube]
+#[ruda]
 pub(crate) fn reduction_count<E: Numeric, N: Size>(
     output: &VirtualTensor<E, N, ReadWrite>,
     reduce_axis: usize,
@@ -17,7 +17,7 @@ pub(crate) fn reduction_count<E: Numeric, N: Size>(
     count
 }
 
-#[cube]
+#[ruda]
 fn reduction_coordinate<E: Numeric, N: Size>(
     output: &VirtualTensor<E, N, ReadWrite>,
     reduce_axis: usize,
@@ -37,7 +37,7 @@ fn reduction_coordinate<E: Numeric, N: Size>(
     (reduction_index / logical_stride) % output.shape(axis)
 }
 
-#[cube]
+#[ruda]
 pub(crate) fn reduction_input_offset<In: Numeric, InSize: Size, Out: Numeric, OutSize: Size>(
     input: &VirtualTensor<In, InSize>,
     output: &VirtualTensor<Out, OutSize, ReadWrite>,
@@ -54,7 +54,7 @@ pub(crate) fn reduction_input_offset<In: Numeric, InSize: Size, Out: Numeric, Ou
     offset / input.vector_size()
 }
 
-#[derive(CubeType, Clone)]
+#[derive(RudaType, Clone)]
 pub(crate) struct ReductionLayout<E: Numeric, N: Size> {
     output: VirtualTensor<E, N, ReadWrite>,
     reduce_axis: usize,
@@ -62,7 +62,7 @@ pub(crate) struct ReductionLayout<E: Numeric, N: Size> {
     accumulator_length: usize,
 }
 
-#[cube]
+#[ruda]
 impl<E: Numeric, N: Size> ReductionLayout<E, N> {
     pub(crate) fn new(
         output: &VirtualTensor<E, N, ReadWrite>,
@@ -78,7 +78,7 @@ impl<E: Numeric, N: Size> ReductionLayout<E, N> {
     }
 }
 
-#[cube]
+#[ruda]
 impl<E: Numeric, N: Size> Layout for ReductionLayout<E, N> {
     type Coordinates = Coords2d;
     type SourceCoordinates = Coords1d;

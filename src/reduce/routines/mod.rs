@@ -1,4 +1,4 @@
-pub mod cube;
+pub mod ruda;
 pub mod plane;
 pub mod reduce_dim;
 pub mod shared_sum;

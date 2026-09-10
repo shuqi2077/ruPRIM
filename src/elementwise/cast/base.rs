@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::max_vector_size;
@@ -7,10 +7,10 @@ use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::DType;
 use ruda_core::tensor::TensorMetadata;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 
-#[cube(launch, address_type = "dynamic")]
+#[ruda(launch, address_type = "dynamic")]
 pub fn cast_element<I: Numeric, O: Numeric, N: Size>(
     input: &LinearView<Vector<I, N>>,
     output: &mut LinearView<Vector<O, N>, ReadWrite>,
@@ -47,8 +47,8 @@ pub fn cast<R: Runtime>(input: RudaTensor<R>, dtype: DType) -> RudaTensor<R> {
     let num_elems: usize = input.meta.num_elements();
 
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&client, working_units, ruda_dim);
 
     let output = empty_device_dtype(
         client.clone(),
@@ -59,8 +59,8 @@ pub fn cast<R: Runtime>(input: RudaTensor<R>, dtype: DType) -> RudaTensor<R> {
 
     cast_element::launch(
         &client,
-        cube_count,
-        cube_dim,
+        ruda_count,
+        ruda_dim,
         address_type!(input, output),
         vector_size,
         input.into_linear_view(),

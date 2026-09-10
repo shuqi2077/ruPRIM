@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::max_vector_size;
@@ -6,13 +6,13 @@ use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::TensorMetadata;
 use ruda_core::tensor::DType;
-use ruda_kernel::dsl::CubeDim;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::RudaDim;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::num_traits::One;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn bool_cast_kernel<B: Int, T: Numeric, N: Size>(
     input: &LinearView<Vector<B, N>>,
     output: &mut LinearView<Vector<T, N>, ReadWrite>,
@@ -42,16 +42,16 @@ pub fn bool_cast<R: Runtime>(tensor: RudaTensor<R>, out_dtype: DType) -> RudaTen
     let vector_size = max_vector_size(&tensor);
     let num_elems = tensor.meta.num_elements();
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
 
     let dtype = tensor.dtype;
 
     unsafe {
         bool_cast_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, output),
             vector_size,
             tensor.into_linear_view(),

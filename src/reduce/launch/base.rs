@@ -1,10 +1,10 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     ReduceError, ReducePrecision, VectorizationMode,
     components::{
         args::{NumericVector, ReduceArgs, TensorArgs, init_tensors},
         global::{
-            cube::GlobalFullCubeReduce, plane::GlobalFullPlaneReduce, unit::GlobalFullUnitReduce,
+            ruda::GlobalFullRudaReduce, plane::GlobalFullPlaneReduce, unit::GlobalFullUnitReduce,
         },
         instructions::*,
     },
@@ -12,7 +12,7 @@ use crate::reduce::{
     output_vectorization_axis,
     routines::{
         GlobalReduceBlueprint, ReduceBlueprint, ReduceProblem, ReduceVectorSettings, Routine,
-        cube::CubeRoutine, plane::PlaneRoutine, unit::UnitRoutine,
+        ruda::RudaRoutine, plane::PlaneRoutine, unit::UnitRoutine,
     },
 };
 use ruda_kernel::dsl::prelude::*;
@@ -88,8 +88,8 @@ pub(crate) fn launch_reduce<Run: Runtime>(
             let routine = PlaneRoutine;
             routine.prepare(client, problem, settings, strategy)?
         }
-        RoutineStrategy::Cube(strategy) => {
-            let routine = CubeRoutine;
+        RoutineStrategy::Ruda(strategy) => {
+            let routine = RudaRoutine;
             routine.prepare(client, problem, settings, strategy)?
         }
     };
@@ -97,8 +97,8 @@ pub(crate) fn launch_reduce<Run: Runtime>(
     unsafe {
         reduce_kernel::launch_unchecked::<TensorArgs, Run>(
             client,
-            settings.cube_count,
-            settings.cube_dim,
+            settings.ruda_count,
+            settings.ruda_dim,
             settings.address_type,
             settings.vector.vector_size_input,
             settings.vector.vector_size_output,
@@ -117,7 +117,7 @@ pub(crate) fn launch_reduce<Run: Runtime>(
     Ok(())
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn reduce_kernel<
     In: Numeric,
     InSize: Size,
@@ -147,7 +147,7 @@ pub fn reduce_kernel<
     );
 }
 
-#[cube]
+#[ruda]
 pub fn reduce_kernel_virtual<
     In: Numeric,
     InSize: Size,
@@ -172,7 +172,7 @@ pub fn reduce_kernel_virtual<
     )
 }
 
-#[cube]
+#[ruda]
 fn reduce_kernel_inner<P: ReducePrecision, Out: NumericVector, R: ReduceFamily>(
     input: &VirtualTensor<P::EI, P::SI>,
     output: &mut VirtualTensor<Out::T, Out::N, ReadWrite>,
@@ -184,15 +184,15 @@ fn reduce_kernel_inner<P: ReducePrecision, Out: NumericVector, R: ReduceFamily>(
     let inst = &R::Instruction::<P>::from_config(config);
 
     match blueprint.global {
-        GlobalReduceBlueprint::Cube(cube) => {
-            GlobalFullCubeReduce::execute::<P, Out, R::Instruction<P>>(
+        GlobalReduceBlueprint::Ruda(ruda) => {
+            GlobalFullRudaReduce::execute::<P, Out, R::Instruction<P>>(
                 input,
                 output,
                 reduce_axis,
                 out_vec_axis,
                 inst,
                 blueprint.vectorization_mode,
-                cube,
+                ruda,
             )
         }
         GlobalReduceBlueprint::Plane(plane) => {

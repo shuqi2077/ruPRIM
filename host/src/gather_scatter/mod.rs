@@ -15,7 +15,7 @@ use ruda_core::tensor::host::{HostTensor, Layout};
 /// Read indices from a tensor as `isize`, the native offset type used by the
 /// gather/scatter/select kernels in this module.
 ///
-/// This is the internal index layer for burn-flex: every indexed op
+/// This is the internal index layer for ruda-tensor-host: every indexed op
 /// ([`gather`], [`scatter_add`], [`select`], [`select_add`], and the
 /// [`scatter_min`]/[`scatter_max`] variants) routes its index tensor through
 /// this helper before touching the element buffer. Normalising to `isize`
@@ -25,7 +25,7 @@ use ruda_core::tensor::host::{HostTensor, Layout};
 /// # Accepted widths
 ///
 /// Any of the integer DTypes `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`,
-/// `U64` is accepted. This is intentional: burn-flex's default `IntElem` is
+/// `U64` is accepted. This is intentional: ruda-tensor-host's default `IntElem` is
 /// I32 rather than the I64 convention used by other backends, and users can
 /// also pin index tensors to any width they want via
 /// `Tensor::from_data(.., (&device, DType::Ix))`. Whichever width lands here
@@ -45,7 +45,7 @@ use ruda_core::tensor::host::{HostTensor, Layout};
 /// Earlier versions of `int_gather`, `int_scatter_add`, `int_select`, and
 /// `int_select_add` carried a `debug_assert_eq!(indices.dtype(), DType::I64,
 /// ..)` that contradicted this helper's contract. The asserts were dropped
-/// in tracel-ai/burn#4776 once it was confirmed that `read_indices` had
+/// in tracel-ai/ruda#4776 once it was confirmed that `read_indices` had
 /// always handled every supported width correctly at runtime. If you're
 /// tempted to re-add a dtype check here, don't - the float siblings
 /// ([`gather_f32`], [`select_f32`], ...) already share this helper without a
@@ -366,7 +366,7 @@ pub fn scatter_or(
 // acceptance through the internal `read_indices` path and the uninit-
 // buffer + rayon-chunked `select` kernel. Plain gather/scatter/select
 // tests (including an empty-indices edge case) live in
-// crates/burn-backend-tests/tests/tensor/float/ops/{gather_scatter,select}.rs
+// crates/ruda-backend-tests/tests/tensor/float/ops/{gather_scatter,select}.rs
 // so every backend is exercised. When adding new tests, keep them here
 // only if they probe flex internals; otherwise add them there.
 #[cfg(test)]

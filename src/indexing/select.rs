@@ -1,17 +1,17 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::RudaTensor;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_core::tensor::TensorMetadata;
-use ruda_kernel::dsl::CubeDim;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::RudaDim;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn select_kernel<T: Numeric, I: Numeric>(
     input: &Tensor<T>,
     indices: &LinearView<I>,
@@ -68,16 +68,16 @@ pub fn select<R: Runtime>(
     }
 
     let working_units = total_elem;
-    let cube_dim = CubeDim::new(indices.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&indices.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(indices.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&indices.client, working_units, ruda_dim);
 
     let (tensor_dtype, indices_dtype) = (tensor.dtype, indices.dtype);
 
     unsafe {
         select_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, indices, output),
             tensor.into_tensor_arg(),
             indices.into_linear_view(),

@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     ReducePrecision,
     components::{
@@ -8,14 +8,14 @@ use crate::reduce::{
 };
 use ruda_kernel::dsl::prelude::*;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct PlaneReader<P: ReducePrecision> {
     reader: Reader<P>,
     plane_dim: u32,
     unit_pos: u32,
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> PlaneReader<P> {
     pub fn new(reader: Reader<P>) -> PlaneReader<P> {
         PlaneReader::<P> {

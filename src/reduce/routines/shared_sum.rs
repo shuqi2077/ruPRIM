@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::ir::features::AtomicUsage;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 use ruda_kernel::library::tensor::layout::linear::LinearViewLaunch;
@@ -11,9 +11,9 @@ use ruda_kernel::dsl::tensor_vector_size_parallel;
 
 use crate::reduce::ReduceError;
 
-/// Sum all the elements of the input tensor distributed over `cube_count` cubes.
+/// Sum all the elements of the input tensor distributed over `ruda_count` rudas.
 ///
-/// This is an optimized version for summing large tensors using multiple cubes.
+/// This is an optimized version for summing large tensors using multiple rudas.
 /// For summing a single axis, the regular reduce entry point is preferred.
 ///
 /// Return an error if atomic addition is not supported for the type `N`.
@@ -28,7 +28,7 @@ use crate::reduce::ReduceError;
 /// # Example
 ///
 /// This examples show how to sum all the elements of a small `2 x 2` matrix.
-/// For more details, see the CubeCL documentation.
+/// For more details, see the Ruda documentation.
 ///
 /// ```ignore
 /// let client = /* ... */;
@@ -50,7 +50,7 @@ use crate::reduce::ReduceError;
 /// };
 ///
 /// // Here `R` is a `ruda_kernel::dsl::Runtime`.
-/// let result = shared_sum::<R, f32>(&client, input, output, cube_count);
+/// let result = shared_sum::<R, f32>(&client, input, output, ruda_count);
 ///
 /// if result.is_ok() {
 ///        let binding = output_handle.binding();
@@ -63,7 +63,7 @@ pub fn shared_sum<R: Runtime>(
     client: &ComputeClient<R>,
     input: TensorBinding<R>,
     output: TensorBinding<R>,
-    cube_count: u32,
+    ruda_count: u32,
     input_elem: ElemType,
 ) -> Result<(), ReduceError> {
     // Check that the client supports atomic addition.
@@ -109,22 +109,22 @@ pub fn shared_sum<R: Runtime>(
     };
 
     // Compute extra parameters.
-    let cube_dim = CubeDim::new_2d(32, 8); // NOTE: If you change that, keep the unit count a power of 2.
-    let num_units = cube_count * cube_dim.num_elems();
+    let ruda_dim = RudaDim::new_2d(32, 8); // NOTE: If you change that, keep the unit count a power of 2.
+    let num_units = ruda_count * ruda_dim.num_elems();
     let num_vectors_per_unit = input_len.div_ceil(num_units as usize * vector_size);
-    let cube_count = CubeCount::new_1d(cube_count);
+    let ruda_count = RudaCount::new_1d(ruda_count);
 
     // Launch kernel
     unsafe {
         shared_sum_kernel::launch_unchecked(
             client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type,
             vector_size,
             input_view,
             output.into_tensor_arg(),
-            cube_dim.num_elems() as usize,
+            ruda_dim.num_elems() as usize,
             num_vectors_per_unit,
             input_elem,
         )
@@ -133,7 +133,7 @@ pub fn shared_sum<R: Runtime>(
     Ok(())
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn shared_sum_kernel<T: Numeric, N: Size>(
     input: &LinearView<Vector<T, N>>,
     output: &mut Tensor<Atomic<T>>,
@@ -168,7 +168,7 @@ fn shared_sum_kernel<T: Numeric, N: Size>(
         sum.store(update);
     }
 
-    // Add the sum for the current cube to the output.
+    // Add the sum for the current ruda to the output.
     if UNIT_POS == 0 {
         output[0].fetch_add(sum.consume());
     }
@@ -176,13 +176,13 @@ fn shared_sum_kernel<T: Numeric, N: Size>(
 
 // This is a simplified version of [tree_reduce].
 // See the documentation there for details.
-// Here we assume that `CUBE_DIM` is always a power of two.
-#[cube]
+// Here we assume that `RUDA_DIM` is always a power of two.
+#[ruda]
 fn sum_shared_memory<T: Numeric, N: Size>(
     accumulator: &mut SharedMemory<Vector<T, N>>,
 ) -> Vector<T, N> {
-    sync_cube();
-    let mut num_active_units = CUBE_DIM;
+    sync_ruda();
+    let mut num_active_units = RUDA_DIM;
     let mut jump = 1;
     while num_active_units > 1 {
         num_active_units /= 2;
@@ -193,7 +193,7 @@ fn sum_shared_memory<T: Numeric, N: Size>(
             accumulator[destination as usize] += element;
         }
         jump *= 2;
-        sync_cube();
+        sync_ruda();
     }
     accumulator[0]
 }

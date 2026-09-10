@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::prelude::*;
 
 use ruda_kernel::dsl::Runtime;
@@ -7,7 +7,7 @@ use ruda_kernel::tensor::unary_numeric::NumericUnaryOpFamily;
 use ruda_kernel::tensor::unary_numeric::launch_unary_numeric;
 use ruda_kernel::tensor::RudaTensor;
 
-#[derive(CubeLaunch, CubeType)]
+#[derive(RudaLaunch, RudaType)]
 struct Options {
     min_value: InputScalar,
     max_value: InputScalar,
@@ -20,7 +20,7 @@ pub fn clamp<R: Runtime>(
 ) -> RudaTensor<R> {
     struct ClampOp;
 
-    #[cube]
+    #[ruda]
     impl<T: Numeric, N: Size> NumericUnaryOp<T, N> for ClampOp {
         type Options = Options;
 

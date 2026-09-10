@@ -12,23 +12,23 @@ pub struct ReduceBlueprint {
 pub enum GlobalReduceBlueprint {
     Unit(UnitReduceBlueprint),
     Plane(PlaneReduceBlueprint),
-    Cube(CubeBlueprint),
+    Ruda(RudaBlueprint),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// A single cube reduces a full vector.
-pub struct CubeBlueprint {
-    /// When too many cubes are spawned, we should put some to idle.
+/// A single ruda reduces a full vector.
+pub struct RudaBlueprint {
+    /// When too many rudas are spawned, we should put some to idle.
     ///
     /// # Notes
     ///
-    /// This only happens when we hit the hardware limit in spawning cubes on a single axis.
-    pub cube_idle: IdleMode,
-    /// There are too many units in a cube causing out-of-bound.
+    /// This only happens when we hit the hardware limit in spawning rudas on a single axis.
+    pub ruda_idle: IdleMode,
+    /// There are too many units in a ruda causing out-of-bound.
     ///
     /// # Notes
     ///
-    /// There are never too many cubes spawned.
+    /// There are never too many rudas spawned.
     pub bound_checks: BoundChecks,
     /// The number of accumulators in shared memory.
     pub num_shared_accumulators: usize,
@@ -54,7 +54,7 @@ pub struct PlaneReduceBlueprint {
     pub bound_checks: BoundChecks,
     /// Whether we recombine accumulators at each iteration or at the end only
     pub plane_merge_strategy: PlaneMergeStrategy,
-    /// If true, we ceil the used cube_dim x to runtime plane_dim
+    /// If true, we ceil the used ruda_dim x to runtime plane_dim
     pub plane_dim_ceil: bool,
 }
 

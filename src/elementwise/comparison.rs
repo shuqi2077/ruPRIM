@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::broadcast_shape;
@@ -7,16 +7,16 @@ use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::DType;
 use ruda_core::tensor::TensorMetadata;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
-#[cube]
+#[ruda]
 pub trait ComparisonOpFamily: 'static + Send + Sync {
     type Operation<T: Numeric, N: Size>: ComparisonOp<T, N>;
 }
 
-#[cube]
+#[ruda]
 pub trait ComparisonOp<C: Numeric, N: Size>: 'static + Send + Sync {
     /// Execute a comparison operation.
     fn execute(lhs: Vector<C, N>, rhs: Vector<C, N>) -> bool;
@@ -32,7 +32,7 @@ impl ComparisonOpFamily for EqualOp {
     type Operation<T: Numeric, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> ComparisonOp<T, N> for EqualOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> bool {
         lhs == rhs
@@ -43,7 +43,7 @@ impl ComparisonOpFamily for GreaterEqualOp {
     type Operation<T: Numeric, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> ComparisonOp<T, N> for GreaterEqualOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> bool {
         lhs >= rhs
@@ -54,7 +54,7 @@ impl ComparisonOpFamily for LowerEqualOp {
     type Operation<T: Numeric, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> ComparisonOp<T, N> for LowerEqualOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> bool {
         lhs <= rhs
@@ -65,7 +65,7 @@ impl ComparisonOpFamily for GreaterOp {
     type Operation<T: Numeric, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> ComparisonOp<T, N> for GreaterOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> bool {
         lhs > rhs
@@ -76,14 +76,14 @@ impl ComparisonOpFamily for LowerOp {
     type Operation<T: Numeric, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> ComparisonOp<T, N> for LowerOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> bool {
         lhs < rhs
     }
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn kernel_scalar_cmp<T: Numeric, Bool: Numeric, N: Size, O: ComparisonOpFamily>(
     input: &LinearView<Vector<T, N>>,
     scalar: InputScalar,
@@ -100,7 +100,7 @@ pub fn kernel_scalar_cmp<T: Numeric, Bool: Numeric, N: Size, O: ComparisonOpFami
     ));
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn kernel_cmp<T: Numeric, Bool: Numeric, N: Size, O: ComparisonOpFamily>(
     lhs: &LinearView<Vector<T, N>>,
     rhs: &LinearView<Vector<T, N>>,
@@ -132,8 +132,8 @@ pub fn launch_cmp<R: Runtime, O: ComparisonOpFamily>(
     let num_elems = shape_out.num_elements();
 
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(lhs.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&lhs.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(lhs.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&lhs.client, working_units, ruda_dim);
 
     let dtypes = [lhs.dtype.into(), dtype_bool.into()];
     let same_tensor_type = dtypes[0] == dtypes[1];
@@ -141,8 +141,8 @@ pub fn launch_cmp<R: Runtime, O: ComparisonOpFamily>(
         unsafe {
             kernel_cmp::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs),
                 vector_size,
                 lhs.clone().into_linear_view(),
@@ -163,8 +163,8 @@ pub fn launch_cmp<R: Runtime, O: ComparisonOpFamily>(
         unsafe {
             kernel_cmp::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs),
                 vector_size,
                 lhs.into_linear_view_like(&rhs),
@@ -192,8 +192,8 @@ pub fn launch_cmp<R: Runtime, O: ComparisonOpFamily>(
         unsafe {
             kernel_cmp::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs, output),
                 vector_size,
                 lhs.into_linear_view_like(&output),
@@ -217,8 +217,8 @@ pub fn launch_scalar_cmp<R: Runtime, O: ComparisonOpFamily>(
     let num_elems = tensor.meta.num_elements();
 
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
 
     let dtypes = [tensor.dtype.into(), dtype_bool.into()];
     let same_tensor_type = dtypes[0] == dtypes[1];
@@ -227,8 +227,8 @@ pub fn launch_scalar_cmp<R: Runtime, O: ComparisonOpFamily>(
         unsafe {
             kernel_scalar_cmp::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor),
                 vector_size,
                 tensor.clone().into_linear_view(),
@@ -256,8 +256,8 @@ pub fn launch_scalar_cmp<R: Runtime, O: ComparisonOpFamily>(
         unsafe {
             kernel_scalar_cmp::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor, output),
                 vector_size,
                 tensor.into_linear_view(),
@@ -353,7 +353,7 @@ pub fn lower_equal_elem<R: Runtime>(
 
 // Unary comparison / predicate / relational ops
 
-#[cube]
+#[ruda]
 pub trait PredicateOp<F: Float, N: Size>: 'static + Send + Sync {
     /// Execute a predicate operation.
     fn execute(input: Vector<F, N>) -> Vector<bool, N>;
@@ -370,7 +370,7 @@ impl PredicateOpFamily for IsNanOp {
     type Operation<F: Float, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<F: Float, N: Size> PredicateOp<F, N> for IsNanOp {
     fn execute(input: Vector<F, N>) -> Vector<bool, N> {
         Vector::is_nan(input)
@@ -380,14 +380,14 @@ impl<F: Float, N: Size> PredicateOp<F, N> for IsNanOp {
 impl PredicateOpFamily for IsInfOp {
     type Operation<F: Float, N: Size> = Self;
 }
-#[cube]
+#[ruda]
 impl<F: Float, N: Size> PredicateOp<F, N> for IsInfOp {
     fn execute(input: Vector<F, N>) -> Vector<bool, N> {
         Vector::is_inf(input)
     }
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn kernel_predicate<F: Float, Bool: Numeric, N: Size, O: PredicateOpFamily>(
     input: &LinearView<Vector<F, N>>,
     output: &mut LinearView<Vector<Bool, N>, ReadWrite>,
@@ -411,8 +411,8 @@ pub fn launch_predicate<R: Runtime, O: PredicateOpFamily>(
 
     let dtypes = [tensor.dtype.into(), dtype_bool.into()];
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
 
     let output = empty_device_dtype(
         tensor.client.clone(),
@@ -424,8 +424,8 @@ pub fn launch_predicate<R: Runtime, O: PredicateOpFamily>(
     unsafe {
         kernel_predicate::launch_unchecked::<O, R>(
             &client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, output),
             vector_size,
             tensor.into_linear_view_like(&output),

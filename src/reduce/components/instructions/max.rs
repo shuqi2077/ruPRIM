@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use super::{ReduceFamily, ReduceInstruction};
 use crate::reduce::components::{
     instructions::{Accumulator, AccumulatorFormat, Item, ReduceRequirements, ReduceStep, Value},
@@ -8,7 +8,7 @@ use ruda_kernel::dsl::prelude::*;
 
 // TODO Add to test framework.
 /// Return the item with the maximum value.
-#[derive(Debug, CubeType, Clone)]
+#[derive(Debug, RudaType, Clone)]
 pub struct Max;
 
 impl ReduceFamily for Max {
@@ -16,7 +16,7 @@ impl ReduceFamily for Max {
     type Config = ();
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ReduceInstruction<P> for Max {
     type SharedAccumulator = SharedMemory<Vector<P::EA, P::SI>>;
     type Config = ();

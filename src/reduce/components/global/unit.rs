@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     BoundChecks, ReduceInstruction, ReducePrecision, VectorizationMode,
     components::{
@@ -13,10 +13,10 @@ use crate::reduce::{
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct GlobalFullUnitReduce;
 
-#[cube]
+#[ruda]
 impl GlobalFullUnitReduce {
     pub fn execute<P: ReducePrecision, Out: NumericVector, I: ReduceInstruction<P>>(
         input: &VirtualTensor<P::EI, P::SI>,

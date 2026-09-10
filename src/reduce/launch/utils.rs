@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{VectorizationMode, launch::VectorizationStrategy};
 use ruda_kernel::dsl::ir::HardwareProperties;
 use ruda_kernel::dsl::prelude::*;
@@ -6,8 +6,8 @@ use ruda_kernel::library::tensor::is_contiguous;
 use ruda_kernel::dsl::tensor_vector_size_parallel;
 use ruda_kernel::dsl::tensor_vector_size_perpendicular;
 
-/// Calculate the number of planes in a cube.
-pub fn calculate_plane_count_per_cube(
+/// Calculate the number of planes in a ruda.
+pub fn calculate_plane_count_per_ruda(
     working_units: usize,
     plane_dim: u32,
     properties: &HardwareProperties,
@@ -26,8 +26,8 @@ pub fn calculate_plane_count_per_cube(
         }
     };
 
-    let max_plane_per_cube = properties.max_units_per_cube / plane_dim;
-    plane_count.min(max_plane_per_cube)
+    let max_plane_per_ruda = properties.max_units_per_ruda / plane_dim;
+    plane_count.min(max_plane_per_ruda)
 }
 
 pub fn generate_vector_size<R: Runtime>(

@@ -2,7 +2,7 @@
 
 use super::SumAutotuneKey;
 use super::key::SumTuneKey;
-use ruda_kernel::dsl::{Runtime, CubeTuneId as TuneId};
+use ruda_kernel::dsl::{Runtime, RudaTuneId as TuneId};
 use ruda_kernel::tensor::RudaTensor;
 use ruda::runtime::{
     client::ComputeClient,
@@ -12,7 +12,7 @@ use crate::reduce::{
     ReduceDtypes, ReduceStrategy,
     components::instructions::ReduceOperationConfig,
     launch::{RoutineStrategy, VectorizationStrategy, tune_key::ReduceAutotuneKey},
-    routines::{BlueprintStrategy, cube::CubeStrategy, plane::PlaneStrategy, unit::UnitStrategy},
+    routines::{BlueprintStrategy, ruda::RudaStrategy, plane::PlaneStrategy, unit::UnitStrategy},
 };
 
 /// Executes autotune on reduce operations.
@@ -26,7 +26,7 @@ pub fn autotune_reduce<R: Runtime>(
 ) {
     use reduce_ops::*;
 
-    static TUNER: LocalTuner<ReduceAutotuneKey, TuneId> = LocalTuner::new("burn_cubecl::kernel::reduce::tune-reduce-dim");
+    static TUNER: LocalTuner<ReduceAutotuneKey, TuneId> = LocalTuner::new("ruda_tensor_device::kernel::reduce::tune-reduce-dim");
 
     let tunables = TUNER.init(|| {
         const PRIORITY_MAX: i8 = 2;
@@ -82,8 +82,8 @@ pub fn autotune_reduce<R: Runtime>(
                     ReduceProps::Balanced,
                 ),
                 (
-                    "cube",
-                    RoutineStrategy::Cube(BlueprintStrategy::Inferred(CubeStrategy {
+                    "ruda",
+                    RoutineStrategy::Ruda(BlueprintStrategy::Inferred(RudaStrategy {
                         use_planes: true,
                     })),
                     ReduceProps::GreatWithLowReduceCount,
@@ -212,7 +212,7 @@ pub fn autotune_sum<R: Runtime>(
 ) -> RudaTensor<R> {
     use sum_ops::*;
 
-    static TUNER: LocalTuner<SumTuneKey, TuneId> = LocalTuner::new("burn_cubecl::kernel::reduce::tune-autotune-sum");
+    static TUNER: LocalTuner<SumTuneKey, TuneId> = LocalTuner::new("ruda_tensor_device::kernel::reduce::tune-autotune-sum");
 
     let tunables = TUNER.init(|| {
         TunableSet::new(create_key_sum::<R>, sum_input_gen::<R>)

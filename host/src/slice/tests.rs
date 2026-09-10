@@ -56,7 +56,7 @@
         let tensor = HostTensor::from_data(TensorData::new(data, [5]));
 
         // Slice [0..;-1] -> [4, 3, 2, 1, 0] (reverse full range)
-        // In Burn's semantics: range selects elements, step determines order
+        // In Ruda's semantics: range selects elements, step determines order
         let slices = vec![Slice::new(0, None, -1)];
         let result = slice(tensor, &slices);
 

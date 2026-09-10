@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_test_runtime::TestRuntime;
 use ruda_kernel::dsl::prelude::*;
 use ruprim::reduce::shared_sum;
@@ -53,12 +53,12 @@ impl TestCase {
             .zeros()
             .generate();
 
-        let cube_count = 3;
+        let ruda_count = 3;
         let result = shared_sum(
             &client,
             input_handle.binding(),
             output_handle.clone().binding(),
-            cube_count,
+            ruda_count,
             TestDType::as_type_native_unchecked().elem_type(),
         );
 

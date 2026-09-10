@@ -1,11 +1,11 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::broadcast_shape;
 use ruda_kernel::tensor::layout::max_vector_size;
 use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
@@ -13,7 +13,7 @@ pub trait BinaryOpFloatFamily: Send + Sync + 'static {
     type BinaryOp<C: Float, N: Size>: BinaryOpFloat<C, N>;
 }
 
-#[cube]
+#[ruda]
 pub trait BinaryOpFloat<C: Float, N: Size>: 'static + Send + Sync {
     /// Execute a binary operation.
     fn execute(lhs: Vector<C, N>, rhs: Vector<C, N>) -> Vector<C, N>;
@@ -25,14 +25,14 @@ impl BinaryOpFloatFamily for ArcTan2Op {
     type BinaryOp<C: Float, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<T: Float, N: Size> BinaryOpFloat<T, N> for ArcTan2Op {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         Vector::atan2(lhs, rhs)
     }
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn kernel_binop<C: Float, N: Size, O: BinaryOpFloatFamily>(
     lhs: &LinearView<Vector<C, N>>,
     rhs: &LinearView<Vector<C, N>>,
@@ -61,15 +61,15 @@ pub fn launch_binop_float<R: Runtime, O: BinaryOpFloatFamily>(
     let num_elems = shape_out.num_elements();
     let working_units = num_elems / vector_size as usize;
 
-    let cube_dim = CubeDim::new(lhs.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&lhs.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(lhs.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&lhs.client, working_units, ruda_dim);
 
     unsafe {
         if lhs.can_mut_broadcast(&rhs) {
             kernel_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs),
                 vector_size,
                 lhs.clone().into_linear_view(),
@@ -82,8 +82,8 @@ pub fn launch_binop_float<R: Runtime, O: BinaryOpFloatFamily>(
         } else if rhs.can_mut_broadcast(&lhs) {
             kernel_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs),
                 vector_size,
                 lhs.into_linear_view_like(&rhs),
@@ -99,8 +99,8 @@ pub fn launch_binop_float<R: Runtime, O: BinaryOpFloatFamily>(
 
             kernel_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs, output),
                 vector_size,
                 lhs.into_linear_view_like(&output),

@@ -1,20 +1,20 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::components::{instructions::lowest_coordinate_matching, precision::ReducePrecision};
 use ruda_kernel::dsl::prelude::*;
 
 pub trait ReduceFamily: Send + Sync + 'static + std::fmt::Debug {
     type Instruction<P: ReducePrecision>: ReduceInstruction<P, Config = Self::Config>;
-    type Config: CubeComptime + Send + Sync;
+    type Config: RudaComptime + Send + Sync;
 }
 
-#[derive(CubeType, Clone, Copy)]
+#[derive(RudaType, Clone, Copy)]
 /// Whether we keep track of coordinates of items
 pub struct ReduceRequirements {
-    #[cube(comptime)]
+    #[ruda(comptime)]
     pub coordinates: bool,
 }
 
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, CubeType)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, RudaType)]
 pub enum AccumulatorFormat {
     Multiple(usize),
     Single,
@@ -33,30 +33,30 @@ impl AccumulatorFormat {
     }
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 /// Whether the accumulator has zero, one or more vectors
-pub enum Value<X: CubePrimitive> {
+pub enum Value<X: RudaPrimitive> {
     Multiple(Array<X>),
     /// Wrap the item to be able to modify it as a field
     Single(ValueWrapper<X>),
     None,
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 /// Wrap the item to be able to modify it as a field
-pub struct ValueWrapper<X: CubePrimitive> {
+pub struct ValueWrapper<X: RudaPrimitive> {
     val: X,
 }
 
-#[cube]
-impl<X: CubePrimitive> ValueWrapper<X> {
+#[ruda]
+impl<X: RudaPrimitive> ValueWrapper<X> {
     pub fn unwrap(&self) -> X {
         self.val
     }
 }
 
-#[cube]
-impl<X: CubePrimitive> Value<X> {
+#[ruda]
+impl<X: RudaPrimitive> Value<X> {
     pub fn new_single(val: X) -> Value<X> {
         Value::new_Single(ValueWrapper::<X> { val })
     }
@@ -101,7 +101,7 @@ impl<X: CubePrimitive> Value<X> {
     }
 }
 
-#[cube]
+#[ruda]
 pub fn plane_topk_insert<N: Numeric, S: Size>(
     elements: &mut Array<Vector<N, S>>,
     coordinates: &mut Value<Vector<u32, S>>,
@@ -178,7 +178,7 @@ pub fn plane_topk_insert<N: Numeric, S: Size>(
     }
 }
 
-#[cube]
+#[ruda]
 pub fn plane_topk_merge<N: Numeric, S: Size>(
     elements: &mut Array<Vector<N, S>>,
     coordinates: &mut Value<Vector<u32, S>>,
@@ -231,17 +231,17 @@ pub fn plane_topk_merge<N: Numeric, S: Size>(
     }
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 /// Whether the accumulator has zero, one or more vectors
 /// This should be the same variant as AccumulatorKind for an instruction
-pub enum SharedAccumulatorKind<X: CubePrimitive> {
+pub enum SharedAccumulatorKind<X: RudaPrimitive> {
     Multiple(Sequence<SharedMemory<X>>),
     Single(SharedMemory<X>),
     None,
 }
 
-#[cube]
-impl<X: CubePrimitive> SharedAccumulatorKind<X> {
+#[ruda]
+impl<X: RudaPrimitive> SharedAccumulatorKind<X> {
     pub fn get(&self, i: usize) -> Value<X> {
         match self {
             SharedAccumulatorKind::Multiple(sequence) => {
@@ -281,11 +281,11 @@ impl<X: CubePrimitive> SharedAccumulatorKind<X> {
 /// A reduction works at three levels. First, it takes input data of type `In` and reduce them
 /// with their coordinate into an `AccumulatorItem`. Then, multiple `AccumulatorItem` are possibly fused
 /// together into a single accumulator that is converted to the expected output type.
-#[cube]
+#[ruda]
 pub trait ReduceInstruction<P: ReducePrecision>:
-    Send + Sync + 'static + std::fmt::Debug + CubeType + Sized
+    Send + Sync + 'static + std::fmt::Debug + RudaType + Sized
 {
-    type Config: CubeComptime + Send + Sync;
+    type Config: RudaComptime + Send + Sync;
 
     /// When multiple agents are collaborating to reduce a single slice,
     /// we need a share accumulator to store multiple `AccumulatorItem`.
@@ -334,23 +334,23 @@ pub trait ReduceInstruction<P: ReducePrecision>:
     ) -> Value<Vector<Out, P::SI>>;
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct Item<P: ReducePrecision> {
     pub elements: Vector<P::EI, P::SI>,
     // Warning: should not be Multiple
     pub args: Value<Vector<u32, P::SI>>,
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct Accumulator<P: ReducePrecision> {
     pub elements: Value<Vector<P::EA, P::SI>>,
     pub args: Value<Vector<u32, P::SI>>,
 }
 
 /// A simple trait that abstract over a single or multiple shared memory.
-#[cube]
+#[ruda]
 pub trait SharedAccumulator<P: ReducePrecision, I: ReduceInstruction<P>>:
-    CubeType + Send + Sync + 'static
+    RudaType + Send + Sync + 'static
 {
     fn allocate(#[comptime] length: usize, #[comptime] _coordinate: bool, inst: &I) -> Self;
 
@@ -359,7 +359,7 @@ pub trait SharedAccumulator<P: ReducePrecision, I: ReduceInstruction<P>>:
     fn write(accumulator: &mut Self, index: usize, item: Accumulator<P>);
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision, I: ReduceInstruction<P>> SharedAccumulator<P, I>
     for SharedMemory<Vector<P::EA, P::SI>>
 {
@@ -380,7 +380,7 @@ impl<P: ReducePrecision, I: ReduceInstruction<P>> SharedAccumulator<P, I>
 }
 
 /// A pair of shared memory used for [`ArgMax`](super::ArgMax) and [`ArgMin`](super::ArgMin).
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct ArgAccumulator<P: ReducePrecision> {
     pub elements: SharedMemory<Vector<P::EA, P::SI>>,
     pub args: SharedMemory<Vector<u32, P::SI>>,
@@ -395,7 +395,7 @@ pub enum ReduceStep {
     Plane,
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision, I: ReduceInstruction<P>> SharedAccumulator<P, I> for ArgAccumulator<P> {
     fn allocate(#[comptime] length: usize, #[comptime] _coordinate: bool, _inst: &I) -> Self {
         ArgAccumulator::<P> {
@@ -417,7 +417,7 @@ impl<P: ReducePrecision, I: ReduceInstruction<P>> SharedAccumulator<P, I> for Ar
     }
 }
 
-#[cube]
+#[ruda]
 pub fn reduce_inplace<P: ReducePrecision, R: ReduceInstruction<P>>(
     inst: &R,
     accumulator: &mut Accumulator<P>,
@@ -427,7 +427,7 @@ pub fn reduce_inplace<P: ReducePrecision, R: ReduceInstruction<P>>(
     R::reduce(inst, accumulator, item, reduce_step)
 }
 
-#[cube]
+#[ruda]
 pub fn reduce_shared_inplace<P: ReducePrecision, R: ReduceInstruction<P>>(
     inst: &R,
     accumulator: &mut R::SharedAccumulator,
@@ -440,7 +440,7 @@ pub fn reduce_shared_inplace<P: ReducePrecision, R: ReduceInstruction<P>>(
     R::SharedAccumulator::write(accumulator, index, acc_item);
 }
 
-#[cube]
+#[ruda]
 pub fn fuse_accumulator_inplace<P: ReducePrecision, R: ReduceInstruction<P>>(
     inst: &R,
     accumulator: &mut R::SharedAccumulator,

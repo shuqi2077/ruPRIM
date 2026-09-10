@@ -310,12 +310,12 @@ pub fn mask_where_bool(tensor: HostTensor, mask: HostTensor, value: HostTensor) 
 
 // All mask_fill / mask_where tests, including negative-stride (flipped /
 // transposed / narrowed) variants, have been migrated to
-// burn-backend-tests (float/ops/mask.rs, int/ops/mask.rs) so they cover
+// ruda-backend-tests (float/ops/mask.rs, int/ops/mask.rs) so they cover
 // every backend. The flex-internal dispatchers `mask_fill_f32` /
 // `mask_where_f32` / `mask_fill_i64` exercised there indirectly via
 // `Flex::float_mask_fill`, `Flex::int_mask_where`, etc. When adding new
 // tests, keep them here only if they probe flex-specific behavior that
 // cannot be expressed through the public backend API; otherwise add
-// them to burn-backend-tests.
+// them to ruda-backend-tests.
 
 pub mod dispatch;

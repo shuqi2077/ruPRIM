@@ -160,7 +160,7 @@ pub fn mask_fill_u8(tensor: &[u8], mask: &[u8], fill_value: u8, out: &mut [u8]) 
 // These use a tight branchless loop that LLVM autovectorizes with native
 // u8->u32/u64 widening instructions (NEON ushll, AVX2 vpmovzxbd).
 //
-// Mask values must be exactly 0 or 1 (Burn bool tensor invariant).
+// Mask values must be exactly 0 or 1 (Ruda bool tensor invariant).
 // wrapping_sub(0, 0)=0x00, wrapping_sub(0, 1)=0xFF..FF. Other values
 // produce partial masks and corrupt output.
 
@@ -337,4 +337,3 @@ fn mask_fill_u8_par(tensor: &[u8], mask: &[u8], fill_value: u8, out: &mut [u8]) 
             );
         });
 }
-

@@ -1,6 +1,6 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_core::tensor::DType;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
@@ -11,7 +11,7 @@ use ruda_kernel::tensor::layout::max_vector_size_many;
 use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
 
-#[cube(launch, address_type = "dynamic")]
+#[ruda(launch, address_type = "dynamic")]
 fn mask_where_kernel<T: Numeric, B: Int, N: Size>(
     input: &LinearView<Vector<T, N>>,
     value: &LinearView<Vector<T, N>>,
@@ -53,8 +53,8 @@ pub fn mask_where<R: Runtime>(
     let vector_size = max_vector_size_many(&[&input, &mask, &value], input.meta.num_dims() - 1);
 
     let working_units = input.meta.num_elements() / vector_size as usize;
-    let cube_dim = CubeDim::new(input.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&input.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(input.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&input.client, working_units, ruda_dim);
 
     let out_shape = broadcast_shape(&[&input, &mask, &value]);
 
@@ -77,8 +77,8 @@ pub fn mask_where<R: Runtime>(
 
     mask_where_kernel::launch(
         &output.client,
-        cube_count,
-        cube_dim,
+        ruda_count,
+        ruda_dim,
         address_type!(input, value, mask, output),
         vector_size,
         input.into_linear_view_like(&output),

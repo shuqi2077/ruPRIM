@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use super::{
     ArgMax, ArgMin, ArgTopK, Max, MaxAbs, Mean, Min, Prod, ReduceFamily, ReduceInstruction,
     ReduceRequirements, SharedAccumulator, Sum,
@@ -20,7 +20,7 @@ use ruda_kernel::dsl::ir::UIntKind;
 use ruda_kernel::dsl::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, CubeType, Clone)]
+#[derive(Debug, RudaType, Clone)]
 pub enum ReduceOperation {
     Sum(Sum),
     Prod(Prod),
@@ -34,7 +34,7 @@ pub enum ReduceOperation {
     TopK(TopK),
 }
 
-#[derive_cube_comptime]
+#[derive_ruda_comptime]
 #[derive(Serialize, Deserialize)]
 pub enum ReduceOperationConfig {
     Sum,
@@ -127,19 +127,19 @@ impl ReduceFamily for ReduceOperation {
     type Config = ReduceOperationConfig;
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct DynamicSharedAccumulator<P: ReducePrecision> {
     pub elements: SharedAccumulatorKind<Vector<P::EA, P::SI>>,
     pub args: SharedAccumulatorKind<Vector<u32, P::SI>>,
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct DynamicAccumulator<P: ReducePrecision> {
     pub elements: Value<Vector<P::EA, P::SI>>,
     pub args: Value<Vector<u32, P::SI>>,
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision, I: ReduceInstruction<P>> SharedAccumulator<P, I>
     for DynamicSharedAccumulator<P>
 {
@@ -200,7 +200,7 @@ impl<P: ReducePrecision, I: ReduceInstruction<P>> SharedAccumulator<P, I>
     }
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ReduceInstruction<P> for ReduceOperation {
     type SharedAccumulator = DynamicSharedAccumulator<P>;
     type Config = ReduceOperationConfig;

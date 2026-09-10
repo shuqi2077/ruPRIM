@@ -4,7 +4,7 @@
 //! bits from `(seed, shape, axis, config)` so the two `HostData`s they return
 //! are directly comparable for the same `axis`/`config`.
 
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 mod argmax;
 mod argmin;
 mod argtopk;

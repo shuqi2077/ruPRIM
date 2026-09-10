@@ -1,10 +1,10 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{ReducePrecision, components::args::NumericVector, routines::GlobalReduceBlueprint};
 use ruda_kernel::dsl::prelude::ReadWrite;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[cube]
+#[ruda]
 pub trait ReduceDimRoutine {
     type Config;
 

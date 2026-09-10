@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     ReduceInstruction, ReducePrecision, VectorizationMode,
     components::{
@@ -10,7 +10,7 @@ use crate::reduce::{
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 /// Abstract how data is written to global memory.
 ///
 /// Depending on the problem kind, writes might be buffered to optimize vectorization, only
@@ -20,7 +20,7 @@ pub enum Writer<Out: NumericVector> {
     Perpendicular(PerpendicularWriter<Out>),
 }
 
-#[cube]
+#[ruda]
 impl<Out: NumericVector> Writer<Out> {
     pub fn new<P: ReducePrecision>(
         input: &VirtualTensor<P::EI, P::SI>,

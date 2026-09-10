@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::prelude::*;
 
 /// Operation family trait for cumulative operations
@@ -7,7 +7,7 @@ pub trait CumulativeOpFamily: Send + Sync + 'static {
 }
 
 /// Trait for cumulative operations
-#[cube]
+#[ruda]
 pub trait CumulativeOp<C: Numeric>: 'static + Send + Sync {
     /// Execute a cumulative operation
     fn execute(lhs: C, rhs: C) -> C;
@@ -40,7 +40,7 @@ impl CumulativeOpFamily for MinOp {
 }
 
 // Implement CumulativeOp for each operation type
-#[cube]
+#[ruda]
 impl<N: Numeric> CumulativeOp<N> for SumOp {
     fn execute(lhs: N, rhs: N) -> N {
         lhs + rhs
@@ -51,7 +51,7 @@ impl<N: Numeric> CumulativeOp<N> for SumOp {
     }
 }
 
-#[cube]
+#[ruda]
 impl<N: Numeric> CumulativeOp<N> for ProdOp {
     fn execute(lhs: N, rhs: N) -> N {
         lhs * rhs
@@ -62,7 +62,7 @@ impl<N: Numeric> CumulativeOp<N> for ProdOp {
     }
 }
 
-#[cube]
+#[ruda]
 impl<N: Numeric> CumulativeOp<N> for MaxOp {
     fn execute(lhs: N, rhs: N) -> N {
         max(lhs, rhs)
@@ -73,7 +73,7 @@ impl<N: Numeric> CumulativeOp<N> for MaxOp {
     }
 }
 
-#[cube]
+#[ruda]
 impl<N: Numeric> CumulativeOp<N> for MinOp {
     fn execute(lhs: N, rhs: N) -> N {
         min(lhs, rhs)

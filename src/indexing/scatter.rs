@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use crate::elementwise::binary::numeric::AddOp;
 use crate::elementwise::binary::numeric::BinaryOp;
@@ -7,12 +7,12 @@ use crate::elementwise::binary::numeric::OrOp;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::tensor::RudaTensor;
-use ruda_kernel::dsl::CubeDim;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::RudaDim;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn scatter_kernel<T: Numeric, I: Int, Op: BinaryOpFamily>(
     input: &mut Tensor<T>,
     indices: &Tensor<I>,
@@ -91,8 +91,8 @@ pub fn scatter<R: Runtime>(
     let num_elems = tensor.meta.num_elements() / tensor.meta.shape()[dim];
 
     let working_units = num_elems;
-    let cube_dim = CubeDim::new(indices.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&indices.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(indices.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&indices.client, working_units, ruda_dim);
 
     let launch = match is_bool {
         true => scatter_kernel::launch_unchecked::<OrOp, R>,
@@ -104,8 +104,8 @@ pub fn scatter<R: Runtime>(
     unsafe {
         launch(
             &tensor.client.clone(),
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, indices, value),
             tensor.clone().into_tensor_arg(),
             indices.into_tensor_arg(),

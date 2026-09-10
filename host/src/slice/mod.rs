@@ -401,6 +401,6 @@ fn compute_slice_info(slice: &Slice, dim_size: isize) -> (usize, usize, isize) {
 // `slice_fill` (1D contiguous, 2D inner-contig, 3D inner-contig, ND
 // strided fallback, stepped-row 2D inner-contig), and non-f32 dtype
 // coverage. General slice correctness across backends is covered by
-// crates/burn-backend-tests/tests/tensor/float/ops/{slice,slice_assign}.rs.
+// crates/ruda-backend-tests/tests/tensor/float/ops/{slice,slice_assign}.rs.
 #[cfg(test)]
 mod tests;

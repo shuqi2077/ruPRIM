@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_test_runtime::TestRuntime;
 use ruda_kernel::dsl::ir::ElemType;
 use ruda_kernel::dsl::ir::FloatKind;
@@ -52,16 +52,16 @@ impl TestCase {
         strategy: ReduceStrategy,
     ) -> Self
     where
-        P::EI: CubePrimitive,
-        P::EA: CubePrimitive,
+        P::EI: RudaPrimitive,
+        P::EA: RudaPrimitive,
     {
         Self {
             shape,
             stride,
             axis,
             strategy,
-            input_dtype: <P::EI as CubePrimitive>::as_type_native_unchecked().storage_type(),
-            accumulation_dtype: <P::EA as CubePrimitive>::as_type_native_unchecked().storage_type(),
+            input_dtype: <P::EI as RudaPrimitive>::as_type_native_unchecked().storage_type(),
+            accumulation_dtype: <P::EA as RudaPrimitive>::as_type_native_unchecked().storage_type(),
         }
     }
 

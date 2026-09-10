@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     ReduceInstruction, ReducePrecision,
     components::{
@@ -12,20 +12,20 @@ use ruda_kernel::library::tensor::View;
 use ruda_kernel::library::tensor::layout::Coords2d;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct PerpendicularWriter<Out: NumericVector> {
     output: View<Vector<Out::T, Out::N>, Coords2d, ReadWrite>,
     axis_size: usize,
-    #[cube(comptime)]
+    #[ruda(comptime)]
     input_vector_size: VectorSize,
-    #[cube(comptime)]
+    #[ruda(comptime)]
     output_vector_size: VectorSize,
     write_index: usize,
-    #[cube(comptime)]
+    #[ruda(comptime)]
     accumulator_length: usize,
 }
 
-#[cube]
+#[ruda]
 impl<Out: NumericVector> PerpendicularWriter<Out> {
     pub fn new<P: ReducePrecision>(
         input: &VirtualTensor<P::EI, P::SI>,
@@ -83,7 +83,7 @@ impl<Out: NumericVector> PerpendicularWriter<Out> {
     }
 }
 
-#[cube]
+#[ruda]
 impl<Out: NumericVector> PerpendicularWriter<Out> {
     fn write_single<S: Size>(&self, vector: Vector<Out::T, S>, k_index: usize) {
         let first_write = self.write_index * comptime![self.input_vector_size / self.output_vector_size];

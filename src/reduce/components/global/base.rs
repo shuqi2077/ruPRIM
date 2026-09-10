@@ -1,11 +1,11 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{IdleMode, ReducePrecision, VectorizationMode, components::args::NumericVector};
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
 /// Output offset (in vector units, matching the writer's layout) of the first
 /// slot (k=0) of reduction `reduction_index`.
-#[cube]
+#[ruda]
 pub fn reduction_output_base<T: Numeric, N: Size>(
     reduction_index: usize,
     output: &mut VirtualTensor<T, N, ReadWrite>,
@@ -21,7 +21,7 @@ pub fn reduction_output_base<T: Numeric, N: Size>(
     }
 }
 
-#[cube]
+#[ruda]
 pub(crate) fn reduce_count(
     output_size: usize,
     #[comptime] vectorization_mode: VectorizationMode,
@@ -33,7 +33,7 @@ pub(crate) fn reduce_count(
     }
 }
 
-#[cube]
+#[ruda]
 pub fn idle_check<P: ReducePrecision, Out: NumericVector>(
     input: &VirtualTensor<P::EI, P::SI>,
     output: &mut VirtualTensor<Out::T, Out::N, ReadWrite>,

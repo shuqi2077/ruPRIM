@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::tensor::layout::shape_divmod_range;
 use ruda_kernel::dsl::Runtime;
@@ -8,14 +8,14 @@ use ruda_kernel::tensor::RudaTensor;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
-use ruda_kernel::dsl::CubeDim;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::RudaDim;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 
 /// gather_nd GPU kernel.
 ///
 /// Each thread handles one element of the output.
 /// Work items = num_indices * slice_size.
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn gather_nd_kernel<T: Numeric, I: Int>(
     data: &Tensor<T>,
     indices: &LinearView<I>,
@@ -98,8 +98,8 @@ pub fn gather_nd<R: Runtime>(
         return output;
     }
 
-    let cube_dim = CubeDim::new(tensor.client.properties(), total_elem);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, total_elem, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), total_elem);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, total_elem, ruda_dim);
 
     let (dtype, indices_dtype) = (tensor.dtype, indices.dtype);
 
@@ -109,8 +109,8 @@ pub fn gather_nd<R: Runtime>(
     unsafe {
         gather_nd_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, indices, output),
             tensor.into_tensor_arg(),
             indices.into_linear_view(),

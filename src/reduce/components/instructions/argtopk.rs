@@ -1,7 +1,7 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::comptime;
-use ruda_kernel::dsl::cube;
-use ruda_kernel::dsl::frontend::CubeIndexMutExpand;
+use ruda_kernel::dsl::ruda;
+use ruda_kernel::dsl::frontend::RudaIndexMutExpand;
 use ruda_kernel::dsl::prelude::*;
 
 use crate::reduce::components::instructions::AccumulatorFormat;
@@ -14,9 +14,9 @@ use crate::reduce::{
 };
 use ruda_kernel::dsl::frontend::Numeric;
 
-#[derive(Debug, CubeType, Clone)]
+#[derive(Debug, RudaType, Clone)]
 pub struct ArgTopK {
-    #[cube(comptime)]
+    #[ruda(comptime)]
     pub k: usize,
 }
 
@@ -25,21 +25,21 @@ impl ReduceFamily for ArgTopK {
     type Config = usize;
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct ArgTopkAccumulator<E: Scalar, S: Size> {
     pub elements: Array<Vector<E, S>>,
     pub coordinates: Array<Vector<u32, S>>,
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct ArgTopKSharedAccumulator<P: ReducePrecision> {
     elements: Sequence<SharedMemory<Vector<P::EA, P::SI>>>,
     args: Sequence<SharedMemory<Vector<u32, P::SI>>>,
-    #[cube(comptime)]
+    #[ruda(comptime)]
     k: usize,
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> SharedAccumulator<P, ArgTopK> for ArgTopKSharedAccumulator<P> {
     fn allocate(#[comptime] length: usize, #[comptime] _coordinate: bool, inst: &ArgTopK) -> Self {
         let mut elements = Sequence::new();
@@ -86,7 +86,7 @@ impl<P: ReducePrecision> SharedAccumulator<P, ArgTopK> for ArgTopKSharedAccumula
     }
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ReduceInstruction<P> for ArgTopK {
     type SharedAccumulator = ArgTopKSharedAccumulator<P>;
     type Config = usize;

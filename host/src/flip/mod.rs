@@ -21,7 +21,7 @@ pub fn flip(tensor: HostTensor, axes: &[usize]) -> HostTensor {
 // stride-only operation in the flex backend, and the test below verifies
 // the underlying buffer pointer is shared across the flip. Correctness
 // tests for flip along various axes live in
-// crates/burn-backend-tests/tests/tensor/{float,int,bool}/ops/flip.rs and
+// crates/ruda-backend-tests/tests/tensor/{float,int,bool}/ops/flip.rs and
 // run against every backend.
 #[cfg(test)]
 mod tests;

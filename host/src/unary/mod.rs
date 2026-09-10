@@ -371,10 +371,10 @@ pub fn erf_f64(x: f64) -> f64 {
 // values outside i64 range. Plain elementwise unary smokes (exp, log, sqrt,
 // abs, sin/cos, tanh, round/floor/ceil, erf) and their stride-through-op
 // variants (transposed/flipped/narrowed/sliced) have been migrated to
-// burn-backend-tests so they run against every backend. When adding new
+// ruda-backend-tests so they run against every backend. When adding new
 // tests, keep them here only if they probe flex-internal helpers
 // (erf_f32/f64, round_ties_even); otherwise add them to
-// crates/burn-backend-tests/tests/tensor/float/ops/.
+// crates/ruda-backend-tests/tests/tensor/float/ops/.
 #[cfg(test)]
 mod tests;
 

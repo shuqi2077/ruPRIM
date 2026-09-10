@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     ReduceInstruction, ReducePrecision,
     components::{
@@ -12,17 +12,17 @@ use ruda_kernel::library::tensor::View;
 use ruda_kernel::library::tensor::layout::Coords2d;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct ParallelWriter<Out: NumericVector> {
     output: View<Vector<Out::T, Out::N>, Coords2d, ReadWrite>,
     buffer: Value<Vector<Out::T, Out::N>>,
     axis_size: usize,
     write_index: usize,
-    #[cube(comptime)]
+    #[ruda(comptime)]
     accumulator_length: usize,
 }
 
-#[cube]
+#[ruda]
 impl<Out: NumericVector> ParallelWriter<Out> {
     pub fn new<P: ReducePrecision>(
         input: &VirtualTensor<P::EI, P::SI>,

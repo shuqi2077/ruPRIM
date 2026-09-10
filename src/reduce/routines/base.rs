@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{ReduceDtypes, ReduceError, VectorizationMode, routines::ReduceBlueprint};
 use ruda_kernel::dsl::prelude::*;
 
@@ -11,8 +11,8 @@ pub struct ReduceVectorSettings {
 
 #[derive(Debug)]
 pub struct ReduceLaunchSettings {
-    pub cube_dim: CubeDim,
-    pub cube_count: CubeCount,
+    pub ruda_dim: RudaDim,
+    pub ruda_count: RudaCount,
     pub address_type: AddressType,
     pub vector: ReduceVectorSettings,
 }
@@ -31,7 +31,7 @@ pub struct ReduceProblem {
 
 #[derive(Debug, Clone)]
 pub enum BlueprintStrategy<R: Routine> {
-    Forced(R::Blueprint, CubeDim),
+    Forced(R::Blueprint, RudaDim),
     Inferred(R::Strategy),
 }
 
@@ -48,24 +48,24 @@ pub trait Routine: core::fmt::Debug + Clone + Sized {
     ) -> Result<(ReduceBlueprint, ReduceLaunchSettings), ReduceError>;
 }
 
-pub(crate) fn validate_cube_dim<R: Runtime>(
+pub(crate) fn validate_ruda_dim<R: Runtime>(
     client: &ComputeClient<R>,
-    cube_dim: CubeDim,
+    ruda_dim: RudaDim,
 ) -> Result<(), ReduceError> {
     let hardware = &client.properties().hardware;
-    let units = cube_dim.x.checked_mul(cube_dim.y).and_then(|xy| xy.checked_mul(cube_dim.z));
-    if cube_dim.x == 0 || cube_dim.y == 0 || cube_dim.z == 0 {
+    let units = ruda_dim.x.checked_mul(ruda_dim.y).and_then(|xy| xy.checked_mul(ruda_dim.z));
+    if ruda_dim.x == 0 || ruda_dim.y == 0 || ruda_dim.z == 0 {
         return Err(ReduceError::Validation {
-            details: "Cube dimensions must be nonzero",
+            details: "Ruda dimensions must be nonzero",
         });
     }
-    if cube_dim.x > hardware.max_cube_dim.0
-        || cube_dim.y > hardware.max_cube_dim.1
-        || cube_dim.z > hardware.max_cube_dim.2
-        || units.is_none_or(|units| units > hardware.max_units_per_cube)
+    if ruda_dim.x > hardware.max_ruda_dim.0
+        || ruda_dim.y > hardware.max_ruda_dim.1
+        || ruda_dim.z > hardware.max_ruda_dim.2
+        || units.is_none_or(|units| units > hardware.max_units_per_ruda)
     {
         return Err(ReduceError::Validation {
-            details: "Cube dimensions exceed device limits",
+            details: "Ruda dimensions exceed device limits",
         });
     }
     Ok(())

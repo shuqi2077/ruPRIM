@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     BoundChecks, ReduceInstruction, ReducePrecision, VectorizationMode,
     components::{
@@ -14,20 +14,20 @@ use ruda_kernel::library::tensor::layout::plain::PlainLayout;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 use crate::reduce::components::layout::reduction_input_offset;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct ParallelReader<P: ReducePrecision> {
     view: View<Vector<P::EI, P::SI>, Coords1d>,
     /// The global offset that points where the vector to reduce is located in global memory.
     batch_offset: usize,
     requirements: ReduceRequirements,
-    #[cube(comptime)]
+    #[ruda(comptime)]
     vector_size: VectorSize,
     bound_checks: ReaderBoundChecks<P>,
     num_chunks: usize,
     effective_plane_dim: u32,
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ParallelReader<P> {
     #[allow(clippy::too_many_arguments)]
     pub fn new<I: ReduceInstruction<P>, Out: NumericVector>(
@@ -70,13 +70,13 @@ impl<P: ReducePrecision> ParallelReader<P> {
         self.num_chunks.div_ceil(self.effective_plane_dim as usize)
     }
 
-    pub fn length_cube(&self) -> usize {
-        self.num_chunks.div_ceil(CUBE_DIM as usize)
+    pub fn length_ruda(&self) -> usize {
+        self.num_chunks.div_ceil(RUDA_DIM as usize)
     }
 
-    pub fn read_cube(&self, vector_index: usize) -> Item<P> {
-        let cube_dim = CUBE_DIM as usize;
-        let plane_pos = vector_index * cube_dim;
+    pub fn read_ruda(&self, vector_index: usize) -> Item<P> {
+        let ruda_dim = RUDA_DIM as usize;
+        let plane_pos = vector_index * ruda_dim;
         let unit_pos = UNIT_POS as usize;
         let pos = plane_pos + unit_pos;
         let offset = pos + self.batch_offset;

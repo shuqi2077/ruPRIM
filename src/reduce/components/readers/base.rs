@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     BoundChecks, ReduceInstruction, ReducePrecision, VectorizationMode,
     components::{
@@ -10,13 +10,13 @@ use crate::reduce::{
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub enum Reader<P: ReducePrecision> {
     Parallel(ParallelReader<P>),
     Perpendicular(PerpendicularReader<P>),
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> Reader<P> {
     #[allow(clippy::too_many_arguments)]
     pub fn new<I: ReduceInstruction<P>, Out: NumericVector>(
@@ -31,9 +31,9 @@ impl<P: ReducePrecision> Reader<P> {
         #[comptime] plane_dim_ceil: bool,
     ) -> Reader<P> {
         let effective_plane_dim = if plane_dim_ceil {
-            min(CUBE_DIM_X, PLANE_DIM)
+            min(RUDA_DIM_X, PLANE_DIM)
         } else {
-            CUBE_DIM_X
+            RUDA_DIM_X
         };
         match vectorization_mode {
             VectorizationMode::Parallel => {
@@ -64,7 +64,7 @@ impl<P: ReducePrecision> Reader<P> {
     }
 }
 
-#[cube]
+#[ruda]
 pub fn new_coordinates<N: Size>(
     coordinate: usize,
     requirements: ReduceRequirements,
@@ -85,7 +85,7 @@ pub fn new_coordinates<N: Size>(
 
 // If vectorization mode is parallel, fill a vector with `x, x+1, ... x+ vector_size - 1` where `x = first`.
 // If vectorization mode is perpendicular, fill a vector with `x, x, ... x` where `x = first`.
-#[cube]
+#[ruda]
 pub(crate) fn fill_coordinate_vector<N: Size>(
     first: u32,
     #[comptime] vectorization_mode: VectorizationMode,

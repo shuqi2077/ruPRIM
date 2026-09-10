@@ -49,7 +49,7 @@ pub fn sum<Run: Runtime>(
     let device = tensor.device.clone();
 
     match strategy {
-        SumStrategy::OneShot(cube_count) => {
+        SumStrategy::OneShot(ruda_count) => {
             let output = zeros_client(client.clone(), device, [1].into(), tensor.dtype);
             let dtype = tensor.dtype;
 
@@ -57,7 +57,7 @@ pub fn sum<Run: Runtime>(
                 &client,
                 tensor.binding(),
                 output.clone().binding(),
-                cube_count,
+                ruda_count,
                 dtype.into(),
             )?;
 
@@ -73,12 +73,12 @@ pub fn sum<Run: Runtime>(
 
 /// Select a strategy to perform a sum.
 pub enum SumStrategy {
-    /// Run a single kernel with many cubes working in parallel to sum all elements.
+    /// Run a single kernel with many rudas working in parallel to sum all elements.
     /// The provided value is the number of elements summed per unit (up-to-rounding )
     OneShot(u32),
     /// Use multiple kernels
     Chained(KernelReduceStrategy),
-    /// Use autotune to find the best cube count given the hardware and the input.
+    /// Use autotune to find the best ruda count given the hardware and the input.
     #[cfg(feature = "tensor-reduce-autotune")]
     Autotune,
 }

@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::ir::StorageType;
 use ruda_kernel::dsl::server::LaunchError;
 use thiserror::Error;
@@ -11,9 +11,9 @@ pub enum ReduceError {
         "Trying to launch a kernel using plane instructions, but there are not supported by the hardware."
     )]
     PlanesUnavailable,
-    /// When the cube count is bigger than the max supported.
-    #[error("The cube count is larger than the max supported.")]
-    CubeCountTooLarge,
+    /// When the ruda count is bigger than the max supported.
+    #[error("The ruda count is larger than the max supported.")]
+    RudaCountTooLarge,
 
     /// A generic validation error
     #[error("A generic validation error: {details}")]

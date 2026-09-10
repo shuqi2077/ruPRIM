@@ -318,10 +318,10 @@ where
 // flex f16/bf16 half-precision storage paths, and broadcast patterns
 // that probe the flex layout system. Plain contiguous add/sub/mul/div
 // and scalar-op smoke tests have been dropped in favor of the
-// equivalent coverage in burn-backend-tests, which exercises every
+// equivalent coverage in ruda-backend-tests, which exercises every
 // backend. When adding new tests, keep them here only if they probe
 // flex-internal dispatch; otherwise add them to
-// crates/burn-backend-tests/tests/tensor/float/ops/.
+// crates/ruda-backend-tests/tests/tensor/float/ops/.
 #[cfg(test)]
 mod tests;
 

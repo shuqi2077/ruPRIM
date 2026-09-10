@@ -9,28 +9,28 @@ use crate::reduce::{
 use ruda_kernel::dsl::prelude::*;
 
 #[derive(RudaType)]
-pub struct UnitReader<P: ReducePrecision> {
+pub struct RudaReader<P: ReducePrecision> {
     reader: Reader<P>,
 }
 
 #[ruda]
 #[allow(clippy::len_without_is_empty)]
-impl<P: ReducePrecision> UnitReader<P> {
-    pub fn new(reader: Reader<P>) -> UnitReader<P> {
-        UnitReader::<P> { reader }
+impl<P: ReducePrecision> RudaReader<P> {
+    pub fn new(reader: Reader<P>) -> RudaReader<P> {
+        RudaReader::<P> { reader }
     }
 
     pub fn read(&self, vector_index: usize) -> Item<P> {
         match &self.reader {
-            Reader::Parallel(reader) => reader.read_unit(vector_index),
-            Reader::Perpendicular(reader) => reader.read_unit(vector_index),
+            Reader::Parallel(reader) => reader.read_ruda(vector_index),
+            Reader::Perpendicular(reader) => reader.read_ruda(vector_index),
         }
     }
 
     pub fn length(&self) -> usize {
         match &self.reader {
-            Reader::Parallel(reader) => reader.length_unit(),
-            Reader::Perpendicular(reader) => reader.length_unit(),
+            Reader::Parallel(reader) => reader.length_ruda(),
+            Reader::Perpendicular(reader) => reader.length_ruda(),
         }
     }
 }

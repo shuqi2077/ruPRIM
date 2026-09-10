@@ -381,7 +381,7 @@ where
 /// Build a bool `FlexTensor` from a `Vec<u8>` of 0/1 bytes, tagged with the
 /// requested output dtype.
 ///
-/// burn-flex stores bools as 1 byte per element, so only Native and U8 are
+/// ruda-tensor-host stores bools as 1 byte per element, so only Native and U8 are
 /// supported. `Bool(U32)` would require 4-byte-per-element storage throughout
 /// the backend; `dtype_usage` declares it unsupported and this function panics
 /// if it's requested.
@@ -390,7 +390,7 @@ pub fn make_bool_tensor(data: Vec<u8>, shape: Shape, out_dtype: BoolDType) -> Ho
         BoolDType::Native => BoolStore::Native,
         BoolDType::U8 => BoolStore::U8,
         BoolDType::U32 => panic!(
-            "burn-flex does not support Bool(U32) storage (only Native and U8). \
+            "ruda-tensor-host does not support Bool(U32) storage (only Native and U8). \
              Use a backend that declares Bool(U32) support, or work with Bool(Native)/Bool(U8)."
         ),
     };
@@ -679,7 +679,7 @@ fn reduce_bool_dim_raw(
 // Tests kept here probe flex-internal `reduce_bool_dim_with` dispatch on
 // non-contiguous inputs (stale-pointer-read regression, see prior incident
 // in `any_float_dim`). Plain comparison ops and stride variants (flipped
-// / transposed / narrowed) have been migrated to burn-backend-tests at
+// / transposed / narrowed) have been migrated to ruda-backend-tests at
 // tensor/{float,int}/ops/comparison.rs so every backend is exercised.
 #[cfg(test)]
 mod tests;

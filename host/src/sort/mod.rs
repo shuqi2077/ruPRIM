@@ -568,7 +568,7 @@ fn make_index_tensor(indices: Vec<isize>, shape: Shape) -> HostTensor {
 // helpers at sizes that straddle `PARALLEL_THRESHOLD`, so both the serial
 // and rayon-parallel branches are covered. End-to-end sort/argsort
 // correctness across backends lives in
-// crates/burn-backend-tests/tests/tensor/float/ops/sort_argsort.rs.
+// crates/ruda-backend-tests/tests/tensor/float/ops/sort_argsort.rs.
 #[cfg(test)]
 mod tests;
 

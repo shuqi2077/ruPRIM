@@ -1,6 +1,6 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::routines::{
-    BlueprintStrategy, cube::CubeRoutine, plane::PlaneRoutine, unit::UnitRoutine,
+    BlueprintStrategy, ruda::RudaRoutine, plane::PlaneRoutine, unit::UnitRoutine,
 };
 use ruda_kernel::dsl::ir::features::Plane;
 use ruda_kernel::dsl::prelude::*;
@@ -17,8 +17,8 @@ pub enum RoutineStrategy {
     Unit(BlueprintStrategy<UnitRoutine>),
     /// A plane is responsible to reduce a full vector.
     Plane(BlueprintStrategy<PlaneRoutine>),
-    /// A cube is responsible to reduce a full vector.
-    Cube(BlueprintStrategy<CubeRoutine>),
+    /// A ruda is responsible to reduce a full vector.
+    Ruda(BlueprintStrategy<RudaRoutine>),
 }
 
 #[derive(Debug, Clone, Copy)]

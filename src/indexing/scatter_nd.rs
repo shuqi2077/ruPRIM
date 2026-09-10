@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use crate::elementwise::binary::numeric::AssignOp;
 use crate::elementwise::binary::numeric::BinaryMaxOp;
@@ -12,8 +12,8 @@ use ruda_kernel::tensor::layout::shape_divmod_range;
 use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::indexing::IndexingUpdateOp;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
-use ruda_kernel::dsl::CubeDim;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::RudaDim;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
 
@@ -23,7 +23,7 @@ mod add;
 ///
 /// Each thread handles one element across all update slices.
 /// Work items = num_updates * slice_size.
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn scatter_nd_kernel<T: Numeric, I: Int, Op: BinaryOpFamily>(
     data: &mut Tensor<T>,
     indices: &LinearView<I>,
@@ -115,8 +115,8 @@ pub fn scatter_nd<R: Runtime>(
     let slice_size: usize = data_shape.as_slice()[k..].iter().product();
     let working_units = num_updates * slice_size;
 
-    let cube_dim = CubeDim::new(indices.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&indices.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(indices.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&indices.client, working_units, ruda_dim);
 
     let (tensor_dtype, indices_dtype) = (tensor.dtype, indices.dtype);
 
@@ -126,8 +126,8 @@ pub fn scatter_nd<R: Runtime>(
     unsafe {
         launch(
             &tensor.client.clone(),
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, indices, values),
             tensor.clone().into_tensor_arg(),
             indices.into_linear_view(),

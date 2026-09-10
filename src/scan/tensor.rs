@@ -1,5 +1,5 @@
-use ruda_kernel::dsl as cubecl;
-use ruda_kernel::dsl::{Runtime, calculate_cube_count_elemwise, prelude::*};
+use ruda_kernel::dsl as kernel_dsl;
+use ruda_kernel::dsl::{Runtime, calculate_ruda_count_elemwise, prelude::*};
 use ruda_kernel::library::{FastDivmod, tensor::layout::linear::LinearView};
 use ruda_kernel::tensor::{RudaTensor, allocation::empty_device_dtype, layout::{address_type, shape_divmod}};
 use ruda_core::tensor::TensorMetadata;
@@ -18,7 +18,7 @@ use super::operation::{CumulativeOp, CumulativeOpFamily, SumOp, ProdOp, MaxOp, M
 /// # TODO
 ///
 /// Implement an efficient GPU-optimized parallel scan algorithm.
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn cumulative_kernel<C: Numeric, O: CumulativeOpFamily>(
     input: &Tensor<C>,
     output: &mut LinearView<C, ReadWrite>,
@@ -96,15 +96,15 @@ fn cumulative_op<R: Runtime, O: CumulativeOpFamily>(
 
     let num_elems = output.meta.num_elements();
     let working_units = num_elems;
-    let cube_dim = CubeDim::new(client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&client, working_units, ruda_dim);
     let shape = shape_divmod(&input);
 
     unsafe {
         cumulative_kernel::launch_unchecked::<O, R>(
             &client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(input, output),
             input.into_tensor_arg(),
             output.clone().into_linear_view(),

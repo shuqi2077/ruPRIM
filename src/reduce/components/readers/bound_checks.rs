@@ -1,25 +1,25 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{BoundChecks, ReduceInstruction, ReducePrecision};
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::View;
 use ruda_kernel::library::tensor::layout::Coords1d;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 #[allow(unused)]
 pub enum ReaderBoundChecks<P: ReducePrecision> {
     NotRequired,
     Required(RequiredReaderBoundChecks<P>),
 }
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct RequiredReaderBoundChecks<P: ReducePrecision> {
-    #[cube(comptime)]
+    #[ruda(comptime)]
     bound_checks: BoundChecks,
     pos_max: usize,
     null_input: Vector<P::EI, P::SI>,
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ReaderBoundChecks<P> {
     pub fn new<I: ReduceInstruction<P>>(
         inst: &I,

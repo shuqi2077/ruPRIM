@@ -1,12 +1,12 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::ir::features::Plane;
 use ruda_kernel::dsl::frontend::CompilationArg;
-use ruda_kernel::dsl::frontend::CubePrimitive;
-use ruda_kernel::dsl::CubeCount;
-use ruda_kernel::dsl::CubeDim;
+use ruda_kernel::dsl::frontend::RudaPrimitive;
+use ruda_kernel::dsl::RudaCount;
+use ruda_kernel::dsl::RudaDim;
 use ruda_kernel::dsl::Runtime;
 use ruda_test_runtime::TestRuntime;
-use ruda_kernel::dsl::cube;
+use ruda_kernel::dsl::ruda;
 use ruda_kernel::dsl::ir::StorageType;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::TensorHandle;
@@ -56,8 +56,8 @@ fn test_topk_plane_reduce_inplace() {
 
     launch_plane_reduce_inplace::launch::<TestRuntime>(
         &client,
-        CubeCount::Static(1, 1, 1),
-        CubeDim::new(client.properties(), num_threads),
+        RudaCount::Static(1, 1, 1),
+        RudaDim::new(client.properties(), num_threads),
         input_handle.binding().into_tensor_arg(),
         output_handle.clone().binding().into_tensor_arg(),
         k,
@@ -83,7 +83,7 @@ fn build_output_tensor(
         .generate()
 }
 
-#[cube(launch)]
+#[ruda(launch)]
 fn launch_plane_reduce_inplace<N: Numeric, S: Size>(
     input: &Tensor<Vector<N, S>>,
     output: &mut Tensor<Vector<N, S>>,
@@ -190,8 +190,8 @@ fn test_topk_plane_topk_insert() {
 
     launch_plane_topk_insert::launch::<TestRuntime>(
         &client,
-        CubeCount::Static(1, 1, 1),
-        CubeDim::new(client.properties(), num_threads),
+        RudaCount::Static(1, 1, 1),
+        RudaDim::new(client.properties(), num_threads),
         acc_handle.clone().binding().into_tensor_arg(),
         item_handle.binding().into_tensor_arg(),
         k,
@@ -205,7 +205,7 @@ fn test_topk_plane_topk_insert() {
     assert_lane_topk_insert(&acc_data, &item_data, actual, num_threads, k, vector_size);
 }
 
-#[cube(launch)]
+#[ruda(launch)]
 fn launch_plane_topk_insert<N: Numeric, S: Size>(
     accumulator: &mut Tensor<Vector<N, S>>,
     new_item: &Tensor<Vector<N, S>>,

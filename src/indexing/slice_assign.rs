@@ -1,16 +1,16 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::dsl::tensor_vector_size_parallel;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::tensor::RudaTensor;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::intrinsic;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn slice_assign_kernel<E: Numeric, N: Size>(
     input: &mut Tensor<Vector<E, N>>,
     value: &LinearView<Vector<E, N>>,
@@ -46,7 +46,7 @@ fn slice_assign_kernel<E: Numeric, N: Size>(
 }
 
 /// Kernel for slice assign with steps
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn slice_assign_with_steps_kernel<E: Numeric>(
     input: &mut Tensor<E>,
     value: &LinearView<E>,
@@ -146,14 +146,14 @@ pub fn slice_assign<R: Runtime>(
     }
 
     let working_units = value.meta.num_elements() / vector_size;
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
 
     unsafe {
         slice_assign_kernel::launch_unchecked(
             &tensor.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, value),
             vector_size,
             tensor.clone().into_tensor_arg(),
@@ -214,8 +214,8 @@ pub fn slice_assign_with_steps<R: Runtime>(
 
     // Launch kernel
     let working_units = value.meta.num_elements();
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
 
     let shape = shape_divmod(&value);
     let step_address = AddressType::from_len(
@@ -224,8 +224,8 @@ pub fn slice_assign_with_steps<R: Runtime>(
     unsafe {
         slice_assign_with_steps_kernel::launch_unchecked(
             &tensor.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, value).max(step_address),
             tensor.clone().into_tensor_arg(),
             value.into_linear_view(),
@@ -243,7 +243,7 @@ pub fn slice_assign_with_steps<R: Runtime>(
 
 /// Helper function for unwrap
 #[allow(unused)]
-#[cube]
+#[ruda]
 fn unwrap(value: u32) -> comptime_type!(u32) {
     intrinsic!(|_| value.constant().unwrap().as_u32())
 }

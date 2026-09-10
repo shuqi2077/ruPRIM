@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use super::{ReduceFamily, ReduceInstruction};
 use crate::reduce::components::{
     instructions::{Accumulator, AccumulatorFormat, Item, ReduceRequirements, ReduceStep, Value},
@@ -6,7 +6,7 @@ use crate::reduce::components::{
 };
 use ruda_kernel::dsl::prelude::*;
 
-#[derive(Debug, CubeType, Clone)]
+#[derive(Debug, RudaType, Clone)]
 pub struct Prod {}
 
 impl ReduceFamily for Prod {
@@ -14,7 +14,7 @@ impl ReduceFamily for Prod {
     type Config = ();
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ReduceInstruction<P> for Prod {
     type SharedAccumulator = SharedMemory<Vector<P::EA, P::SI>>;
     type Config = ();

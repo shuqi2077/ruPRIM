@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
@@ -6,12 +6,12 @@ use ruda_kernel::tensor::allocation::empty_device_dtype;
 use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::DType;
 use ruda_core::tensor::TensorMetadata;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn flip_kernel<E: Numeric, Bool: Int>(
     input: &Tensor<E>,
     output: &mut LinearView<E, ReadWrite>,
@@ -80,15 +80,15 @@ pub fn flip_on_output<R: Runtime>(
     }
 
     let num_elements = output.meta.num_elements();
-    let cube_dim = CubeDim::new(tensor.client.properties(), num_elements);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, num_elements, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), num_elements);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, num_elements, ruda_dim);
 
     let shape = shape_divmod(&tensor);
     unsafe {
         flip_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(tensor, output),
             tensor.into_tensor_arg(),
             output.clone().into_linear_view(),

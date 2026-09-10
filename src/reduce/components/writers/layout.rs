@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::Coords1d;
 use ruda_kernel::library::tensor::layout::Coords2d;
@@ -16,7 +16,7 @@ use crate::reduce::components::layout::ReductionLayout;
 /// For rank-1 outputs (or any case where `reduce_axis == out_vec_axis`), the
 /// caller should pass `write_stride = 0` and `num_writes = 1`, so the layout
 /// collapses to `position = k_iter * k_stride`.
-#[derive(CubeType, Clone)]
+#[derive(RudaType, Clone)]
 pub struct ReduceOutputLayout {
     k_stride: usize,
     write_stride: usize,
@@ -24,7 +24,7 @@ pub struct ReduceOutputLayout {
     accumulator_length: usize,
 }
 
-#[cube]
+#[ruda]
 impl ReduceOutputLayout {
     pub fn new(
         k_stride: usize,
@@ -41,7 +41,7 @@ impl ReduceOutputLayout {
     }
 }
 
-#[cube]
+#[ruda]
 impl Layout for ReduceOutputLayout {
     type Coordinates = Coords2d;
     type SourceCoordinates = Coords1d;
@@ -66,7 +66,7 @@ impl Layout for ReduceOutputLayout {
 }
 
 /// Build the output layout from reduction ordinals and the tensor's actual strides.
-#[cube]
+#[ruda]
 pub(crate) fn build_reduce_output_layout<Out: NumericVector>(
     output: &VirtualTensor<Out::T, Out::N, ReadWrite>,
     reduce_axis: usize,

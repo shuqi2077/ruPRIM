@@ -113,6 +113,6 @@ pub fn unfold_int(tensor: HostTensor, dim: usize, size: usize, step: usize) -> H
 
 // Correctness of unfold across dtypes and shapes is covered by the
 // cross-backend suite in
-// crates/burn-backend-tests/tests/tensor/{float,int,bool}/ops/unfold.rs,
+// crates/ruda-backend-tests/tests/tensor/{float,int,bool}/ops/unfold.rs,
 // which exercises the flex backend through the public `unfold` op. No
 // flex-specific tests remain here.

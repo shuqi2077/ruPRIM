@@ -1,19 +1,19 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use super::{
     GlobalReduceBlueprint, ReduceBlueprint, ReduceLaunchSettings, ReduceProblem,
     ReduceVectorSettings,
 };
 use crate::reduce::{
     BoundChecks, IdleMode, ReduceError, VectorizationMode,
-    launch::{calculate_plane_count_per_cube, support_plane},
+    launch::{calculate_plane_count_per_ruda, support_plane},
     routines::{BlueprintStrategy, PlaneMergeStrategy, PlaneReduceBlueprint, Routine},
 };
-use ruda_kernel::dsl::CubeCount;
-use ruda_kernel::dsl::CubeDim;
+use ruda_kernel::dsl::RudaCount;
+use ruda_kernel::dsl::RudaDim;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::dsl::ir::features::Plane;
 use ruda_kernel::dsl::prelude::ComputeClient;
-use ruda_kernel::tiling::cube_count::cube_count_spread_with_total;
+use ruda_kernel::tiling::ruda_count::ruda_count_spread_with_total;
 
 #[derive(Debug, Clone)]
 pub struct PlaneRoutine;
@@ -36,26 +36,26 @@ impl Routine for PlaneRoutine {
         strategy: BlueprintStrategy<Self>,
     ) -> Result<(ReduceBlueprint, ReduceLaunchSettings), ReduceError> {
         let address_type = problem.address_type;
-        let (blueprint, cube_dim, cube_count) = match strategy {
-            BlueprintStrategy::Forced(blueprint, cube_dim) => {
-                super::validate_cube_dim(client, cube_dim)?;
+        let (blueprint, ruda_dim, ruda_count) = match strategy {
+            BlueprintStrategy::Forced(blueprint, ruda_dim) => {
+                super::validate_ruda_dim(client, ruda_dim)?;
                 if !support_plane(client) {
                     return Err(ReduceError::PlanesUnavailable);
                 }
 
                 let properties = &client.properties().hardware;
-                if cube_dim.x != properties.plane_size_max {
+                if ruda_dim.x != properties.plane_size_max {
                     return Err(ReduceError::Validation {
-                        details: "`cube_dim.x` must match `plane_size_max`",
+                        details: "`ruda_dim.x` must match `plane_size_max`",
                     });
                 }
                 let working_planes = working_planes(&settings, &problem);
 
-                let planes_per_cube = cube_dim.y as usize * cube_dim.z as usize;
-                let working_cubes = working_planes.div_ceil(planes_per_cube);
-                let (cube_count, launched_cubes) =
-                    cube_count_spread_with_total(client, working_cubes);
-                let plane_idle = launched_cubes * planes_per_cube != working_planes;
+                let planes_per_ruda = ruda_dim.y as usize * ruda_dim.z as usize;
+                let working_rudas = working_planes.div_ceil(planes_per_ruda);
+                let (ruda_count, launched_rudas) =
+                    ruda_count_spread_with_total(client, working_rudas);
+                let plane_idle = launched_rudas * planes_per_ruda != working_planes;
 
                 if plane_idle && !blueprint.plane_idle.is_enabled() {
                     return Err(ReduceError::Validation {
@@ -68,18 +68,18 @@ impl Routine for PlaneRoutine {
                     global: GlobalReduceBlueprint::Plane(blueprint),
                 };
 
-                (blueprint, cube_dim, cube_count)
+                (blueprint, ruda_dim, ruda_count)
             }
             BlueprintStrategy::Inferred(strategy) => {
-                let (blueprint, cube_dim, cube_count) =
+                let (blueprint, ruda_dim, ruda_count) =
                     generate_blueprint::<R>(client, problem, &settings, strategy)?;
-                (blueprint, cube_dim, cube_count)
+                (blueprint, ruda_dim, ruda_count)
             }
         };
 
         let launch = ReduceLaunchSettings {
-            cube_dim,
-            cube_count,
+            ruda_dim,
+            ruda_count,
             address_type,
             vector: settings,
         };
@@ -93,7 +93,7 @@ fn generate_blueprint<R: Runtime>(
     problem: ReduceProblem,
     settings: &ReduceVectorSettings,
     strategy: PlaneStrategy,
-) -> Result<(ReduceBlueprint, CubeDim, CubeCount), ReduceError> {
+) -> Result<(ReduceBlueprint, RudaDim, RudaCount), ReduceError> {
     if !support_plane(client) {
         return Err(ReduceError::PlanesUnavailable);
     }
@@ -102,13 +102,13 @@ fn generate_blueprint<R: Runtime>(
     let plane_size = properties.plane_size_max;
     let working_planes = working_planes(settings, &problem);
     let working_units = working_planes * plane_size as usize;
-    let plane_count = calculate_plane_count_per_cube(working_units, plane_size, properties);
-    let working_cubes = working_planes.div_ceil(plane_count as usize);
+    let plane_count = calculate_plane_count_per_ruda(working_units, plane_size, properties);
+    let working_rudas = working_planes.div_ceil(plane_count as usize);
 
-    let cube_dim = CubeDim::new_2d(plane_size, plane_count);
-    let (cube_count, cube_launched) = cube_count_spread_with_total(client, working_cubes);
+    let ruda_dim = RudaDim::new_2d(plane_size, plane_count);
+    let (ruda_count, ruda_launched) = ruda_count_spread_with_total(client, working_rudas);
 
-    let plane_idle = cube_launched * cube_dim.num_elems() as usize != working_units;
+    let plane_idle = ruda_launched * ruda_dim.num_elems() as usize != working_units;
     let work_size = match settings.vectorization_mode {
         VectorizationMode::Parallel => problem.reduce_len / settings.vector_size_input,
         VectorizationMode::Perpendicular => problem.reduce_len,
@@ -147,7 +147,7 @@ fn generate_blueprint<R: Runtime>(
         }),
     };
 
-    Ok((blueprint, cube_dim, cube_count))
+    Ok((blueprint, ruda_dim, ruda_count))
 }
 
 fn working_planes(settings: &ReduceVectorSettings, problem: &ReduceProblem) -> usize {

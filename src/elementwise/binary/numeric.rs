@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::broadcast_shape;
@@ -8,7 +8,7 @@ use ruda_kernel::tensor::RudaTensor;
 use ruda_core::tensor::TensorMetadata;
 use half::bf16;
 use half::f16;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::dsl::intrinsic;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
@@ -17,7 +17,7 @@ pub trait BinaryOpFamily: Send + Sync + 'static {
     type BinaryOp<C: Numeric, N: Size>: BinaryOp<C, N>;
 }
 
-#[cube]
+#[ruda]
 pub trait BinaryOp<C: Numeric, N: Size>: 'static + Send + Sync {
     /// Execute a binary operation.
     fn execute(lhs: Vector<C, N>, rhs: Vector<C, N>) -> Vector<C, N>;
@@ -79,42 +79,42 @@ impl BinaryOpFamily for BinaryMaxOp {
     type BinaryOp<C: Numeric, N: Size> = Self;
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for AddOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         lhs + rhs
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for SubOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         lhs - rhs
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for MulOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         lhs * rhs
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for DivOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         lhs / rhs
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for RemainderOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         Vector::rem(lhs, rhs)
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for PowOp {
     #[allow(unused)]
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
@@ -153,42 +153,42 @@ impl<T: Numeric, N: Size> BinaryOp<T, N> for PowOp {
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for AndOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         Vector::cast_from(Vector::<bool, N>::cast_from(lhs).and(Vector::<bool, N>::cast_from(rhs)))
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for OrOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         Vector::cast_from(Vector::<bool, N>::cast_from(lhs).or(Vector::<bool, N>::cast_from(rhs)))
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for AssignOp {
     fn execute(_lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         rhs
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for BinaryMinOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         clamp_max(lhs, rhs)
     }
 }
 
-#[cube]
+#[ruda]
 impl<T: Numeric, N: Size> BinaryOp<T, N> for BinaryMaxOp {
     fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
         clamp_min(lhs, rhs)
     }
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn kernel_scalar_binop<C: Numeric, N: Size, O: BinaryOpFamily>(
     input: &LinearView<Vector<C, N>>,
     scalar: InputScalar,
@@ -203,7 +203,7 @@ pub fn kernel_scalar_binop<C: Numeric, N: Size, O: BinaryOpFamily>(
         O::BinaryOp::<C, N>::execute(input[ABSOLUTE_POS], Vector::new(scalar.get::<C>()));
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 pub fn kernel_binop<C: Numeric, N: Size, O: BinaryOpFamily>(
     lhs: &LinearView<Vector<C, N>>,
     rhs: &LinearView<Vector<C, N>>,
@@ -232,15 +232,15 @@ pub fn launch_binop<R: Runtime, O: BinaryOpFamily>(
     let num_elems = shape_out.num_elements();
     let working_units = num_elems / vector_size as usize;
 
-    let cube_dim = CubeDim::new(lhs.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&lhs.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(lhs.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&lhs.client, working_units, ruda_dim);
 
     unsafe {
         if lhs.can_mut_broadcast(&rhs) {
             kernel_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs),
                 vector_size,
                 lhs.clone().into_linear_view(),
@@ -253,8 +253,8 @@ pub fn launch_binop<R: Runtime, O: BinaryOpFamily>(
         } else if rhs.can_mut_broadcast(&lhs) {
             kernel_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs),
                 vector_size,
                 lhs.into_linear_view_like(&rhs),
@@ -270,8 +270,8 @@ pub fn launch_binop<R: Runtime, O: BinaryOpFamily>(
 
             kernel_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(lhs, rhs, output),
                 vector_size,
                 lhs.into_linear_view_like(&output),
@@ -296,15 +296,15 @@ pub fn launch_scalar_binop<R: Runtime, O: BinaryOpFamily>(
     let dtype = tensor.dtype;
 
     let working_units = num_elems / vector_size as usize;
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
 
     unsafe {
         if tensor.can_mut() && tensor.is_nonoverlapping() {
             kernel_scalar_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor),
                 vector_size,
                 tensor.clone().into_linear_view(),
@@ -324,8 +324,8 @@ pub fn launch_scalar_binop<R: Runtime, O: BinaryOpFamily>(
 
             kernel_scalar_binop::launch_unchecked::<O, R>(
                 &client,
-                cube_count,
-                cube_dim,
+                ruda_count,
+                ruda_dim,
                 address_type!(tensor, output),
                 vector_size,
                 tensor.into_linear_view(),

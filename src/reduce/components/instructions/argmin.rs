@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use super::{
     ArgAccumulator, ReduceFamily, ReduceInstruction, ReduceRequirements, lowest_coordinate_matching,
 };
@@ -9,7 +9,7 @@ use crate::reduce::components::{
 use ruda_kernel::dsl::prelude::*;
 
 /// Compute the coordinate of the maximum item returning the smallest coordinate in case of equality.
-#[derive(Debug, CubeType, Clone)]
+#[derive(Debug, RudaType, Clone)]
 pub struct ArgMin {}
 
 impl ReduceFamily for ArgMin {
@@ -17,7 +17,7 @@ impl ReduceFamily for ArgMin {
     type Config = ();
 }
 
-#[cube]
+#[ruda]
 impl ArgMin {
     /// Compare two pairs of items and coordinates and return a new pair
     /// where each element in the vectors is the minimal item with its coordinate.
@@ -39,7 +39,7 @@ impl ArgMin {
     }
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> ReduceInstruction<P> for ArgMin {
     type SharedAccumulator = ArgAccumulator<P>;
     type Config = ();

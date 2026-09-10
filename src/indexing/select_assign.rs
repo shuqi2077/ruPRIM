@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::elementwise::binary::numeric::AddOp;
 use crate::elementwise::binary::numeric::BinaryOp;
 use crate::elementwise::binary::numeric::BinaryOpFamily;
@@ -7,8 +7,8 @@ use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::dsl::Runtime;
 use ruda_kernel::tensor::RudaTensor;
-use ruda_kernel::dsl::CubeDim;
-use ruda_kernel::dsl::calculate_cube_count_elemwise;
+use ruda_kernel::dsl::RudaDim;
+use ruda_kernel::dsl::calculate_ruda_count_elemwise;
 use ruda_kernel::library::tensor::layout::linear::LinearView;
 use ruda_kernel::dsl::prelude::*;
 use ruda_kernel::library::FastDivmod;
@@ -16,7 +16,7 @@ use ruda_kernel::library::FastDivmod;
 /// Uses checked launch mode because user-provided `indices` may contain out-of-bounds values
 /// that would cause invalid writes into `tensor`. Checked mode clamps these accesses rather
 /// than producing undefined behavior.
-#[cube(launch, address_type = "dynamic")]
+#[ruda(launch, address_type = "dynamic")]
 fn select_assign_kernel<F: Numeric, I: Numeric, Op: BinaryOpFamily>(
     tensor: &mut Tensor<F>,
     indices: &LinearView<I>,
@@ -82,8 +82,8 @@ pub fn select_assign<R: Runtime>(
     };
 
     let working_units = value.meta.num_elements() / value.meta.shape()[axis];
-    let cube_dim = CubeDim::new(indices.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&indices.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(indices.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&indices.client, working_units, ruda_dim);
 
     let launch = match is_bool {
         true => select_assign_kernel::launch::<OrOp, R>,
@@ -95,8 +95,8 @@ pub fn select_assign<R: Runtime>(
     let shape = shape_divmod(&value);
     launch(
         &tensor.client,
-        cube_count,
-        cube_dim,
+        ruda_count,
+        ruda_dim,
         address_type!(tensor, indices, value),
         tensor.clone().into_tensor_arg(),
         indices.into_linear_view(),

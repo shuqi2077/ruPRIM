@@ -1,7 +1,7 @@
 use super::{allocate_output, packing_layout, raw_dtype, read_value};
 use ruda_core::tensor::{QTensorPrimitive, QuantScheme, TensorMetadata};
-use ruda_kernel::dsl as cubecl;
-use ruda_kernel::dsl::{Runtime, calculate_cube_count_elemwise, prelude::*};
+use ruda_kernel::dsl as kernel_dsl;
+use ruda_kernel::dsl::{Runtime, calculate_ruda_count_elemwise, prelude::*};
 use ruda_kernel::library::{FastDivmod, tensor::layout::linear::LinearView};
 use ruda_kernel::tensor::{RudaTensor, layout::{address_type, shape_divmod}};
 
@@ -26,14 +26,14 @@ pub fn quantized_gather<R: Runtime>(
     }
 
     let (axis, inner, axis_len) = packing_layout(&output);
-    let cube_dim = CubeDim::new(output.client.properties(), num_elems);
-    let cube_count = calculate_cube_count_elemwise(&output.client, num_elems, cube_dim);
+    let ruda_dim = RudaDim::new(output.client.properties(), num_elems);
+    let ruda_count = calculate_ruda_count_elemwise(&output.client, num_elems, ruda_dim);
     let dtypes = [raw_dtype(values.dtype).into(), indices.dtype.into()];
     unsafe {
         gather_kernel::launch_unchecked(
             &output.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type!(values, indices, out_values).max(AddressType::from_len(
                 tensor.meta.num_elements().max(output.meta.num_elements()),
             )),
@@ -52,7 +52,7 @@ pub fn quantized_gather<R: Runtime>(
     output
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn gather_kernel<T: Int, I: Numeric>(
     input: &Tensor<T>,
     indices: &LinearView<I>,

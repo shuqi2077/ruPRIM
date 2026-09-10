@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use ruda_kernel::dsl::zspace::Strides;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]

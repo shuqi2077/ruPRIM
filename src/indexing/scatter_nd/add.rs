@@ -1,6 +1,6 @@
 use ruda_core::ir::features::AtomicUsage;
-use ruda_kernel::dsl as cubecl;
-use ruda_kernel::dsl::{Runtime, calculate_cube_count_elemwise, prelude::*};
+use ruda_kernel::dsl as kernel_dsl;
+use ruda_kernel::dsl::{Runtime, calculate_ruda_count_elemwise, prelude::*};
 use ruda_kernel::library::{FastDivmod, tensor::layout::linear::LinearView};
 use ruda_kernel::tensor::{RudaTensor, layout::{address_type, shape_divmod_range}};
 
@@ -19,8 +19,8 @@ pub(super) fn scatter_nd_add<R: Runtime>(
         .atomic_type_usage(Type::new(StorageType::Atomic(tensor.dtype.into())))
         .contains(AtomicUsage::Add);
     let working_units = if supports_atomic_add { total } else { slice_size };
-    let cube_dim = CubeDim::new(tensor.client.properties(), working_units);
-    let cube_count = calculate_cube_count_elemwise(&tensor.client, working_units, cube_dim);
+    let ruda_dim = RudaDim::new(tensor.client.properties(), working_units);
+    let ruda_count = calculate_ruda_count_elemwise(&tensor.client, working_units, ruda_dim);
     let launch = if supports_atomic_add {
         atomic_add_kernel::launch_unchecked::<R>
     } else {
@@ -35,8 +35,8 @@ pub(super) fn scatter_nd_add<R: Runtime>(
     unsafe {
         launch(
             &tensor.client,
-            cube_count,
-            cube_dim,
+            ruda_count,
+            ruda_dim,
             address_type,
             tensor.clone().into_tensor_arg(),
             indices.into_linear_view(),
@@ -51,7 +51,7 @@ pub(super) fn scatter_nd_add<R: Runtime>(
     tensor
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn atomic_add_kernel<T: Numeric, I: Int>(
     data: &mut Tensor<Atomic<T>>,
     indices: &LinearView<I>,
@@ -82,7 +82,7 @@ fn atomic_add_kernel<T: Numeric, I: Int>(
     data[data_idx].fetch_add(values[ABSOLUTE_POS]);
 }
 
-#[cube(launch_unchecked, address_type = "dynamic")]
+#[ruda(launch_unchecked, address_type = "dynamic")]
 fn ordered_add_kernel<T: Numeric, I: Int>(
     data: &mut Tensor<T>,
     indices: &LinearView<I>,

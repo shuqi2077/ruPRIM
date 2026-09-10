@@ -12,23 +12,23 @@ pub fn launch<R: Runtime>(tensor: RudaTensor<R>) -> RudaTensor<R> {
     })
 }
 
-#[derive(CubeLaunch, CubeType)]
+#[derive(RudaLaunch, RudaType)]
 struct SiluOptions {
-    #[cube(comptime)]
+    #[ruda(comptime)]
     source: String,
 }
 
 struct Silu;
 
 /// Shared SiLU arithmetic for standalone and fused F32/F16/BF16 kernels.
-#[cube]
+#[ruda]
 pub fn apply<F: Float, N: Size>(input: Vector<F, N>) -> Vector<F, N> {
     let input = Vector::<f32, N>::cast_from(input);
     let denominator = Vector::new(1f32) + Vector::exp(-input);
     Vector::cast_from(input / denominator)
 }
 
-#[cube]
+#[ruda]
 impl<F: Float, N: Size> FloatUnaryOp<F, N> for Silu {
     type Options = SiluOptions;
 

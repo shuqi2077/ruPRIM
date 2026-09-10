@@ -1,5 +1,5 @@
 //! This provides different implementations of the reduce algorithm which
-//! can run on multiple GPU backends using CubeCL.
+//! can run on multiple GPU backends using Ruda.
 //!
 //! A reduction is a tensor operation mapping a rank `R` tensor to a rank `R - 1`
 //! by agglomerating all elements along a given axis with some binary operator.
@@ -15,7 +15,7 @@
     reason = "Too sensitive, triggers on tuple of vector."
 )]
 
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 pub mod components;
 pub mod launch;
 pub mod routines;
@@ -54,10 +54,10 @@ pub use routines::shared_sum::shared_sum;
 /// # Example
 ///
 /// This examples show how to sum the rows of a small `2 x 2` matrix into a `1 x 2` vector.
-/// For more details, see the CubeCL documentation.
+/// For more details, see the Ruda documentation.
 ///
 /// ```ignore
-/// use cubecl_reduce::instructions::Sum;
+/// use ruprim::instructions::Sum;
 ///
 /// let client = /* ... */;
 /// let size_f32 = std::mem::size_of::<f32>();

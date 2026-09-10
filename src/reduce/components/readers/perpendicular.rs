@@ -1,4 +1,4 @@
-use ruda_kernel::dsl as cubecl;
+use ruda_kernel::dsl as kernel_dsl;
 use crate::reduce::{
     BoundChecks, ReduceInstruction, ReducePrecision, VectorizationMode,
     components::{
@@ -14,7 +14,7 @@ use ruda_kernel::library::tensor::layout::plain::PlainLayout;
 use ruda_kernel::library::tensor::r#virtual::VirtualTensor;
 use crate::reduce::components::layout::reduction_input_offset;
 
-#[derive(CubeType)]
+#[derive(RudaType)]
 pub struct PerpendicularReader<P: ReducePrecision> {
     view: View<Vector<P::EI, P::SI>, Coords1d>,
     /// The global offset that points where the vector to reduce is located in global memory.
@@ -26,7 +26,7 @@ pub struct PerpendicularReader<P: ReducePrecision> {
     effective_plane_dim: u32,
 }
 
-#[cube]
+#[ruda]
 impl<P: ReducePrecision> PerpendicularReader<P> {
     #[allow(clippy::too_many_arguments)]
     pub fn new<I: ReduceInstruction<P>, Out: NumericVector>(
@@ -69,12 +69,12 @@ impl<P: ReducePrecision> PerpendicularReader<P> {
         self.shape.div_ceil(self.effective_plane_dim as usize)
     }
 
-    pub fn length_cube(&self) -> usize {
-        self.shape.div_ceil(CUBE_DIM as usize)
+    pub fn length_ruda(&self) -> usize {
+        self.shape.div_ceil(RUDA_DIM as usize)
     }
 
-    pub fn read_cube(&self, vector_index: usize) -> Item<P> {
-        let plane_pos = vector_index * CUBE_DIM as usize;
+    pub fn read_ruda(&self, vector_index: usize) -> Item<P> {
+        let plane_pos = vector_index * RUDA_DIM as usize;
         let unit_pos = UNIT_POS as usize;
         let pos = plane_pos + unit_pos;
         let offset = plane_pos * self.vector_offset_stride
