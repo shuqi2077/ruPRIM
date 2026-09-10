@@ -2,6 +2,9 @@
 name = "ruPRIM"
 version.workspace = true
 edition.workspace = true
+description = "Parallel primitives, reductions, scans, and indexing for Ruda."
+license-file = "LICENSE"
+repository = "https://github.com/shuqi2077/RUDA"
 
 [lib]
 name = "ruprim"
@@ -21,7 +24,7 @@ extended = ["heavy"]
 full = ["extended"]
 
 [dependencies]
-ruda = { path = "../ruda", default-features = false }
+ruda = { version = "0.1.0", path = "../ruda", default-features = false }
 half = { version = "=2.7.1", features = ["alloc", "num-traits", "serde"] }
 
 [dev-dependencies]
@@ -32,6 +35,7 @@ unsafe_code = "deny"
 
 [dependencies.ruda-kernel]
 path = "../ruda-kernel"
+version = "0.1.0"
 default-features = false
 features = ["kernel-ir"]
 optional = true
@@ -57,6 +61,7 @@ optional = true
 
 [dependencies.ruda-test-utils]
 path = "../ruda-test-utils"
+version = "0.1.0"
 default-features = false
 optional = true
 
@@ -79,6 +84,7 @@ required-features = ["kernel-ir", "cpu-reference"]
 
 [dependencies.ruda-core]
 path = "../ruda-core"
+version = "0.1.0"
 default-features = false
 features = ["tensor"]
 optional = true
