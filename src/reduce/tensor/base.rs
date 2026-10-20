@@ -48,6 +48,10 @@ pub fn sum<Run: Runtime>(
     let client = tensor.client.clone();
     let device = tensor.device.clone();
 
+    if tensor.meta.num_elements() == 0 {
+        return Ok(zeros_client(client, device, [1].into(), tensor.dtype));
+    }
+
     match strategy {
         SumStrategy::OneShot(ruda_count) => {
             let output = zeros_client(client.clone(), device, [1].into(), tensor.dtype);

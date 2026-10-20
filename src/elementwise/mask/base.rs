@@ -28,9 +28,9 @@ pub fn mask_where_auto<R: Runtime>(
     value: RudaTensor<R>,
     dtype_bool: DType,
 ) -> RudaTensor<R> {
-    let strategy = if tensor.can_mut_broadcast(&value) {
+    let strategy = if tensor.can_mut_broadcast(&value) && tensor.can_mut_broadcast(&mask) {
         MaskWhereStrategy::InplaceLhs
-    } else if value.can_mut_broadcast(&tensor) {
+    } else if value.can_mut_broadcast(&tensor) && value.can_mut_broadcast(&mask) {
         MaskWhereStrategy::InplaceRhs
     } else {
         MaskWhereStrategy::Readonly

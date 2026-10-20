@@ -75,6 +75,10 @@ impl TensorMetadata for HostQTensor {
     fn rank(&self) -> usize {
         self.tensor.rank()
     }
+
+    fn can_mut(&self) -> bool {
+        self.tensor.can_mut()
+    }
 }
 
 impl core::fmt::Debug for HostQTensor {

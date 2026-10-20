@@ -82,6 +82,10 @@ pub fn float_atan2(lhs: HostTensor, rhs: HostTensor) -> HostTensor {
     )
 }
 
+pub fn float_hypot(lhs: HostTensor, rhs: HostTensor) -> HostTensor {
+    binary_op(lhs, rhs, |a: f32, b| a.hypot(b), |a: f64, b| a.hypot(b), None)
+}
+
 pub fn float_powi(lhs: HostTensor, rhs: HostTensor) -> HostTensor {
     super::integer_power::tensor(lhs, rhs)
 }

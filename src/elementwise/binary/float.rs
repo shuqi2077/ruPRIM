@@ -21,6 +21,19 @@ pub trait BinaryOpFloat<C: Float, N: Size>: 'static + Send + Sync {
 
 pub struct ArcTan2Op;
 
+pub struct HypotOp;
+
+impl BinaryOpFloatFamily for HypotOp {
+    type BinaryOp<C: Float, N: Size> = Self;
+}
+
+#[ruda]
+impl<T: Float, N: Size> BinaryOpFloat<T, N> for HypotOp {
+    fn execute(lhs: Vector<T, N>, rhs: Vector<T, N>) -> Vector<T, N> {
+        Vector::hypot(lhs, rhs)
+    }
+}
+
 impl BinaryOpFloatFamily for ArcTan2Op {
     type BinaryOp<C: Float, N: Size> = Self;
 }
@@ -117,4 +130,13 @@ pub fn launch_binop_float<R: Runtime, O: BinaryOpFloatFamily>(
 /// Calculate the four-quadrant inverse tangent of `lhs / rhs`.
 pub fn atan2<R: Runtime>(lhs: RudaTensor<R>, rhs: RudaTensor<R>) -> RudaTensor<R> {
     launch_binop_float::<R, ArcTan2Op>(lhs, rhs)
+}
+
+/// Compute the element-wise hypotenuse with broadcasting.
+pub fn hypot<R: Runtime>(lhs: RudaTensor<R>, rhs: RudaTensor<R>) -> RudaTensor<R> {
+    let shape = lhs.meta.shape().broadcast(rhs.meta.shape()).expect("Compatible hypot shapes");
+    if shape.num_elements() == 0 {
+        return empty_device_dtype(lhs.client, lhs.device, shape, lhs.dtype);
+    }
+    launch_binop_float::<R, HypotOp>(lhs, rhs)
 }

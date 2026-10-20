@@ -3,6 +3,8 @@ use crate::elementwise::binary::numeric::AddOp;
 use crate::elementwise::binary::numeric::BinaryOp;
 use crate::elementwise::binary::numeric::BinaryOpFamily;
 use crate::elementwise::binary::numeric::OrOp;
+use crate::elementwise::binary::numeric::{AssignOp, BinaryMaxOp, BinaryMinOp, MulOp};
+use ruda_core::tensor::indexing::IndexingUpdateOp;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::dsl::Runtime;
@@ -72,6 +74,27 @@ pub fn select_assign<R: Runtime>(
     value: RudaTensor<R>,
     is_bool: bool,
 ) -> RudaTensor<R> {
+    select_assign_impl(tensor, axis, indices, value, IndexingUpdateOp::Add, is_bool)
+}
+
+pub fn select_assign_update<R: Runtime>(
+    tensor: RudaTensor<R>,
+    axis: usize,
+    indices: RudaTensor<R>,
+    value: RudaTensor<R>,
+    update: IndexingUpdateOp,
+) -> RudaTensor<R> {
+    select_assign_impl(tensor, axis, indices, value, update, false)
+}
+
+fn select_assign_impl<R: Runtime>(
+    tensor: RudaTensor<R>,
+    axis: usize,
+    indices: RudaTensor<R>,
+    value: RudaTensor<R>,
+    update: IndexingUpdateOp,
+    is_bool: bool,
+) -> RudaTensor<R> {
     if value.meta.num_elements() == 0 {
         return tensor;
     }
@@ -85,9 +108,13 @@ pub fn select_assign<R: Runtime>(
     let ruda_dim = RudaDim::new(indices.client.properties(), working_units);
     let ruda_count = calculate_ruda_count_elemwise(&indices.client, working_units, ruda_dim);
 
-    let launch = match is_bool {
-        true => select_assign_kernel::launch::<OrOp, R>,
-        false => select_assign_kernel::launch::<AddOp, R>,
+    let launch = match update {
+        IndexingUpdateOp::Assign => select_assign_kernel::launch::<AssignOp, R>,
+        IndexingUpdateOp::Add if is_bool => select_assign_kernel::launch::<OrOp, R>,
+        IndexingUpdateOp::Add => select_assign_kernel::launch::<AddOp, R>,
+        IndexingUpdateOp::Mul => select_assign_kernel::launch::<MulOp, R>,
+        IndexingUpdateOp::Min => select_assign_kernel::launch::<BinaryMinOp, R>,
+        IndexingUpdateOp::Max => select_assign_kernel::launch::<BinaryMaxOp, R>,
     };
 
     let (tensor_dtype, indices_dtype) = (tensor.dtype, indices.dtype);

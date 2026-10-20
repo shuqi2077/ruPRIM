@@ -5,6 +5,8 @@ use crate::elementwise::binary::numeric::AssignOp;
 use crate::elementwise::binary::numeric::BinaryOp;
 use crate::elementwise::binary::numeric::BinaryOpFamily;
 use crate::elementwise::binary::numeric::OrOp;
+use crate::elementwise::binary::numeric::{BinaryMaxOp, BinaryMinOp, MulOp};
+use ruda_core::tensor::indexing::IndexingUpdateOp;
 use ruda_kernel::tensor::layout::address_type;
 use ruda_kernel::tensor::layout::shape_divmod;
 use ruda_kernel::tensor::RudaTensor;
@@ -80,7 +82,7 @@ pub fn scatter<R: Runtime>(
     value: RudaTensor<R>,
     is_bool: bool,
 ) -> RudaTensor<R> {
-    scatter_impl(dim, tensor, indices, value, is_bool, false)
+    scatter_impl(dim, tensor, indices, value, is_bool, IndexingUpdateOp::Add)
 }
 
 pub fn scatter_assign<R: Runtime>(
@@ -89,7 +91,17 @@ pub fn scatter_assign<R: Runtime>(
     indices: RudaTensor<R>,
     value: RudaTensor<R>,
 ) -> RudaTensor<R> {
-    scatter_impl(dim, tensor, indices, value, false, true)
+    scatter_update(dim, tensor, indices, value, IndexingUpdateOp::Assign)
+}
+
+pub fn scatter_update<R: Runtime>(
+    dim: usize,
+    tensor: RudaTensor<R>,
+    indices: RudaTensor<R>,
+    value: RudaTensor<R>,
+    update: IndexingUpdateOp,
+) -> RudaTensor<R> {
+    scatter_impl(dim, tensor, indices, value, false, update)
 }
 
 fn scatter_impl<R: Runtime>(
@@ -98,7 +110,7 @@ fn scatter_impl<R: Runtime>(
     indices: RudaTensor<R>,
     value: RudaTensor<R>,
     is_bool: bool,
-    assign: bool,
+    update: IndexingUpdateOp,
 ) -> RudaTensor<R> {
     if value.meta.num_elements() == 0 {
         return tensor;
@@ -115,10 +127,13 @@ fn scatter_impl<R: Runtime>(
     let ruda_dim = RudaDim::new(indices.client.properties(), working_units);
     let ruda_count = calculate_ruda_count_elemwise(&indices.client, working_units, ruda_dim);
 
-    let launch = match (assign, is_bool) {
-        (true, _) => scatter_kernel::launch_unchecked::<AssignOp, R>,
-        (false, true) => scatter_kernel::launch_unchecked::<OrOp, R>,
-        (false, false) => scatter_kernel::launch_unchecked::<AddOp, R>,
+    let launch = match update {
+        IndexingUpdateOp::Assign => scatter_kernel::launch_unchecked::<AssignOp, R>,
+        IndexingUpdateOp::Add if is_bool => scatter_kernel::launch_unchecked::<OrOp, R>,
+        IndexingUpdateOp::Add => scatter_kernel::launch_unchecked::<AddOp, R>,
+        IndexingUpdateOp::Mul => scatter_kernel::launch_unchecked::<MulOp, R>,
+        IndexingUpdateOp::Min => scatter_kernel::launch_unchecked::<BinaryMinOp, R>,
+        IndexingUpdateOp::Max => scatter_kernel::launch_unchecked::<BinaryMaxOp, R>,
     };
 
     let (tensor_dtype, indices_dtype) = (tensor.dtype, indices.dtype);

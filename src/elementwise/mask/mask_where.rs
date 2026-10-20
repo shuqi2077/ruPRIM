@@ -52,11 +52,10 @@ pub fn mask_where<R: Runtime>(
 ) -> RudaTensor<R> {
     let vector_size = max_vector_size_many(&[&input, &mask, &value], input.meta.num_dims() - 1);
 
-    let working_units = input.meta.num_elements() / vector_size as usize;
+    let out_shape = broadcast_shape(&[&input, &mask, &value]);
+    let working_units = out_shape.num_elements() / vector_size as usize;
     let ruda_dim = RudaDim::new(input.client.properties(), working_units);
     let ruda_count = calculate_ruda_count_elemwise(&input.client, working_units, ruda_dim);
-
-    let out_shape = broadcast_shape(&[&input, &mask, &value]);
 
     let output = match strategy {
         MaskWhereStrategy::Readonly => empty_device_dtype(
