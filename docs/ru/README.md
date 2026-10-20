@@ -31,13 +31,13 @@ cargo build --release --locked -p ruPRIM --features tensor-reduce,tensor-scan,in
 
 ## Документация
 
-- [Руководство пользователя](../../../../docs/ru/libraries/ruprim.md)
-- [Настройка среды](../../../../docs/ru/getting-started.md)
+- [Руководство пользователя](../../../docs/ru/libraries/ruprim.md)
+- [Настройка среды](../../../docs/ru/getting-started.md)
 - [Функции Cargo](../../Cargo.toml) · [Экспорт модулей](../../src/lib.rs)
 
 ## ruPRIM Руководство пользователя
 
-[Вычислительные библиотеки](../../../../docs/ru/libraries/README.md) · [Тензорная платформа](../../../../docs/ru/tensor-framework.md) · [中文](../zh/README.md)
+[Вычислительные библиотеки](../../../docs/ru/libraries/README.md) · [Тензорная платформа](../../../docs/ru/tensor-framework.md) · [中文](../zh/README.md)
 
 ruPRIM обеспечивает сокращение тензора устройства, совокупное сканирование, поэлементные операции и индексирование. На этой странице используется `RudaTensor<R>`, где R — среда выполнения устройства.
 
@@ -53,14 +53,14 @@ ruPRIM обеспечивает сокращение тензора устрой
 |`elementwise`|`ruprim::elementwise`: поэлементное вычисление|
 |`indexing`| `ruprim::indexing`: выбор, срезы, gather, scatter; также включает elementwise |
 
-В этой конфигурации каталог приложения размещается рядом с исходным каталогом `RUDA`. См. раздел [Начало работы](../../../../docs/ru/getting-started.md) для настройки NVIDIA.
+В этой конфигурации каталог приложения размещается рядом с исходным каталогом `RUDA`. См. раздел [Начало работы](../../../docs/ru/getting-started.md) для настройки NVIDIA.
 
 ```toml
 [dependencies]
-ruprim = { package = "ruPRIM", path = "../RUDA/crates/ruPRIM", default-features = false, features = ["std", "tensor-reduce", "tensor-scan", "indexing"] }
-ruda-core = { path = "../RUDA/crates/ruda-core", default-features = false, features = ["std", "tensor-host-data"] }
-ruda-kernel = { path = "../RUDA/crates/ruda-kernel", default-features = false, features = ["frontend-std", "device-tensor"] }
-ruda-driver-cuda = { path = "../RUDA/crates/ruda-driver-cuda", default-features = false, features = ["std"] }
+ruprim = { package = "ruPRIM", path = "../RUDA/ruPRIM", default-features = false, features = ["std", "tensor-reduce", "tensor-scan", "indexing"] }
+ruda-core = { path = "../RUDA/ruda-core", default-features = false, features = ["std", "tensor-host-data"] }
+ruda-kernel = { path = "../RUDA/ruda-kernel", default-features = false, features = ["frontend-std", "device-tensor"] }
+ruda-driver-cuda = { path = "../RUDA/ruda-driver-cuda", default-features = false, features = ["std"] }
 ```
 
 ### 2. Сумма, сокращение строк и сканирование
