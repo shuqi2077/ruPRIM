@@ -29,6 +29,6 @@ Default features: `std`, `simd`, `rayon`.
 
 ## Links
 
-- [Package source](https://github.com/shuqi2077/RUDA/tree/main/ruPRIM/host/src)
-- [Cargo manifest](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/host/Cargo.toml)
+- [Package source](https://github.com/shuqi2077/RUDA/tree/main/crates/ruPRIM/host/src)
+- [Cargo manifest](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/host/Cargo.toml)
 - [Ruda guide](https://github.com/shuqi2077/RUDA/blob/main/docs/en/libraries/ruprim.md)

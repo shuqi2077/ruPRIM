@@ -31,13 +31,13 @@ cargo build --release --locked -p ruPRIM --features tensor-reduce,tensor-scan,in
 
 ## ドキュメント
 
-- [ユーザーガイド](../../../docs/ja/libraries/ruprim.md)
-- [環境設定](../../../docs/ja/getting-started.md)
+- [ユーザーガイド](../../../../docs/ja/libraries/ruprim.md)
+- [環境設定](../../../../docs/ja/getting-started.md)
 - [Cargo 機能](../../Cargo.toml) · [モジュール エクスポート](../../src/lib.rs)
 
 ## ruPRIM ユーザーガイド
 
-[計算ライブラリ](../../../docs/ja/libraries/README.md) · [Tensor フレームワーク](../../../docs/ja/tensor-framework.md) · [中文](../zh/README.md)
+[計算ライブラリ](../../../../docs/ja/libraries/README.md) · [Tensor フレームワーク](../../../../docs/ja/tensor-framework.md) · [中文](../zh/README.md)
 
 ruPRIM は、デバイス テンソル削減、累積スキャン、要素ごとの操作、およびインデックス付けを提供します。このページでは `RudaTensor<R>` を使用します。R はデバイス ランタイムです。
 
@@ -53,14 +53,14 @@ Cargo パッケージは `ruPRIM` です。 Rust インポート名は `ruprim` 
 |`elementwise`|`ruprim::elementwise`: 要素ごとの計算|
 |`indexing`| `ruprim::indexing`: 選択、スライス、gather、scatter。elementwise も有効化する |
 
-この構成では、アプリケーション ディレクトリが `RUDA` ソース ディレクトリの横に配置されます。 NVIDIA のセットアップについては、[はじめに](../../../docs/ja/getting-started.md) を参照してください。
+この構成では、アプリケーション ディレクトリが `RUDA` ソース ディレクトリの横に配置されます。 NVIDIA のセットアップについては、[はじめに](../../../../docs/ja/getting-started.md) を参照してください。
 
 ```toml
 [dependencies]
-ruprim = { package = "ruPRIM", path = "../RUDA/ruPRIM", default-features = false, features = ["std", "tensor-reduce", "tensor-scan", "indexing"] }
-ruda-core = { path = "../RUDA/ruda-core", default-features = false, features = ["std", "tensor-host-data"] }
-ruda-kernel = { path = "../RUDA/ruda-kernel", default-features = false, features = ["frontend-std", "device-tensor"] }
-ruda-driver-cuda = { path = "../RUDA/ruda-driver-cuda", default-features = false, features = ["std"] }
+ruprim = { package = "ruPRIM", path = "../RUDA/crates/ruPRIM", default-features = false, features = ["std", "tensor-reduce", "tensor-scan", "indexing"] }
+ruda-core = { path = "../RUDA/crates/ruda-core", default-features = false, features = ["std", "tensor-host-data"] }
+ruda-kernel = { path = "../RUDA/crates/ruda-kernel", default-features = false, features = ["frontend-std", "device-tensor"] }
+ruda-driver-cuda = { path = "../RUDA/crates/ruda-driver-cuda", default-features = false, features = ["std"] }
 ```
 
 ### 2. 合計、行削減、およびスキャン

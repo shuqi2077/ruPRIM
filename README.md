@@ -1,6 +1,6 @@
 # ruPRIM
 
-**English** | [简体中文](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/docs/zh/README.md) | [日本語](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/docs/ja/README.md) | [Deutsch](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/docs/de/README.md) | [Русский](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/docs/ru/README.md)
+**English** | [简体中文](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/docs/zh/README.md) | [日本語](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/docs/ja/README.md) | [Deutsch](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/docs/de/README.md) | [Русский](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/docs/ru/README.md)
 
 Parallel primitives, reductions, scans, and indexing for Ruda.
 
@@ -31,11 +31,11 @@ cargo build --release --locked -p ruPRIM --features tensor-reduce,tensor-scan,in
 
 - [User guide](https://github.com/shuqi2077/RUDA/blob/main/docs/en/libraries/ruprim.md)
 - [Environment setup](https://github.com/shuqi2077/RUDA/blob/main/docs/en/getting-started.md)
-- [Cargo features](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/Cargo.toml) · [Module exports](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/src/lib.rs)
+- [Cargo features](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/Cargo.toml) · [Module exports](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/src/lib.rs)
 
 ## ruPRIM User Guide
 
-[Compute libraries](https://github.com/shuqi2077/RUDA/blob/main/docs/en/libraries/README.md) · [Tensor framework](https://github.com/shuqi2077/RUDA/blob/main/docs/en/tensor-framework.md) · [中文](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/docs/zh/README.md)
+[Compute libraries](https://github.com/shuqi2077/RUDA/blob/main/docs/en/libraries/README.md) · [Tensor framework](https://github.com/shuqi2077/RUDA/blob/main/docs/en/tensor-framework.md) · [中文](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/docs/zh/README.md)
 
 ruPRIM provides device tensor reductions, cumulative scans, elementwise operations, and indexing. This page uses `RudaTensor<R>`, where R is a device Runtime.
 
@@ -55,10 +55,10 @@ This configuration places the application directory alongside the `RUDA` source 
 
 ```toml
 [dependencies]
-ruprim = { package = "ruPRIM", path = "../RUDA/ruPRIM", default-features = false, features = ["std", "tensor-reduce", "tensor-scan", "indexing"] }
-ruda-core = { path = "../RUDA/ruda-core", default-features = false, features = ["std", "tensor-host-data"] }
-ruda-kernel = { path = "../RUDA/ruda-kernel", default-features = false, features = ["frontend-std", "device-tensor"] }
-ruda-driver-cuda = { path = "../RUDA/ruda-driver-cuda", default-features = false, features = ["std"] }
+ruprim = { package = "ruPRIM", path = "../RUDA/crates/ruPRIM", default-features = false, features = ["std", "tensor-reduce", "tensor-scan", "indexing"] }
+ruda-core = { path = "../RUDA/crates/ruda-core", default-features = false, features = ["std", "tensor-host-data"] }
+ruda-kernel = { path = "../RUDA/crates/ruda-kernel", default-features = false, features = ["frontend-std", "device-tensor"] }
+ruda-driver-cuda = { path = "../RUDA/crates/ruda-driver-cuda", default-features = false, features = ["std"] }
 ```
 
 ### 2. Sum, row reductions, and scans
@@ -210,4 +210,4 @@ Integer powers are in `ruprim::elementwise::binary::integer_power`:
 
 Use `Scalar::Int(-2)` for a negative exponent rather than converting the exponent to floating point. Indexing and elementwise interfaces return device tensors directly. To retain an input for other operations, pass cloned handles as in the example and keep the tensor returned by each operation.
 
-API reference: [Reductions](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/src/reduce/tensor/base.rs), [Scans](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/src/scan/tensor.rs), [Indexing](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/src/indexing/mod.rs), [Integer powers](https://github.com/shuqi2077/RUDA/blob/main/ruPRIM/src/elementwise/binary/integer_power.rs).
+API reference: [Reductions](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/src/reduce/tensor/base.rs), [Scans](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/src/scan/tensor.rs), [Indexing](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/src/indexing/mod.rs), [Integer powers](https://github.com/shuqi2077/RUDA/blob/main/crates/ruPRIM/src/elementwise/binary/integer_power.rs).
