@@ -60,7 +60,7 @@ Diese Konfiguration platziert das Anwendungsverzeichnis neben dem `RUDA`-Quellve
 ruprim = { package = "ruPRIM", path = "../RUDA/ruPRIM", default-features = false, features = ["std", "tensor-reduce", "tensor-scan", "indexing"] }
 ruda-core = { path = "../RUDA/ruda-core", default-features = false, features = ["std", "tensor-host-data"] }
 ruda-kernel = { path = "../RUDA/ruda-kernel", default-features = false, features = ["frontend-std", "device-tensor"] }
-ruda-driver-cuda = { path = "../RUDA/ruda-driver-cuda", default-features = false, features = ["std"] }
+ruda-driver-cuda = { path = "../RUDA/ruda-driver/cuda", default-features = false, features = ["std"] }
 ```
 
 ### 2. Summe, Zeilenreduzierungen und Scans
