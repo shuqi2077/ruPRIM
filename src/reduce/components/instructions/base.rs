@@ -45,26 +45,26 @@ pub enum Value<X: RudaPrimitive> {
 #[derive(RudaType)]
 /// Wrap the item to be able to modify it as a field
 pub struct ValueWrapper<X: RudaPrimitive> {
-    val: X,
+    val: RuntimeCell<X>,
 }
 
 #[ruda]
 impl<X: RudaPrimitive> ValueWrapper<X> {
     pub fn unwrap(&self) -> X {
-        self.val
+        self.val.read()
     }
 }
 
 #[ruda]
 impl<X: RudaPrimitive> Value<X> {
     pub fn new_single(val: X) -> Value<X> {
-        Value::new_Single(ValueWrapper::<X> { val })
+        Value::new_Single(ValueWrapper::<X> { val: RuntimeCell::new(val) })
     }
 
     pub fn item(&self) -> X {
         match self {
             Value::Multiple(_) => panic!("Tried item on Multiple"),
-            Value::Single(item) => item.val,
+            Value::Single(item) => item.val.read(),
             Value::None => panic!("Tried item on None"),
         }
     }
@@ -93,7 +93,7 @@ impl<X: RudaPrimitive> Value<X> {
                 }
             }
             (Value::Single(this), Value::Single(other)) => {
-                this.val = other.val;
+                this.val.store(other.val.read());
             }
             (Value::None, Value::None) => {}
             _ => panic!("Tried assigning different accumulator kinds"),

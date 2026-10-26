@@ -70,7 +70,9 @@ impl<Out: NumericVector> ParallelWriter<Out> {
                 }
             }
             Value::Single(element) => {
-                self.buffer.item()[local_index] = element.unwrap();
+                let mut vector = self.buffer.item();
+                vector[local_index] = element.unwrap();
+                self.buffer.assign(&Value::new_single(vector));
             }
             Value::None => {
                 unreachable!()
